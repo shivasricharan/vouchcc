@@ -1,27 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import { useDashboard } from '@/context/DashboardContext';
+import type { ViewId } from '@/context/DashboardContext';
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', icon: '◈', active: true },
-  { label: 'Leads',     icon: '◎', active: false },
-  { label: 'Funnel',    icon: '◇', active: false },
-  { label: 'Teams',     icon: '◯', active: false },
-  { label: 'Insights',  icon: '◆', active: false },
-  { label: 'Settings',  icon: '⚙', active: false },
+const NAV_ITEMS: { label: string; icon: string; id: ViewId }[] = [
+  { label: 'Dashboard', icon: '◈', id: 'dashboard' },
+  { label: 'Leads',     icon: '◎', id: 'leads' },
+  { label: 'Funnel',    icon: '◇', id: 'funnel' },
+  { label: 'Teams',     icon: '◯', id: 'teams' },
+  { label: 'Insights',  icon: '◆', id: 'insights' },
+  { label: 'Settings',  icon: '⚙', id: 'settings' },
 ];
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
+  const { view, setView, dataMode, fileName, uploadedAt } = useDashboard();
+
+  const badgeLabel = dataMode === 'live'
+    ? `Live: ${fileName ? (fileName.length > 18 ? fileName.slice(0, 18) + '…' : fileName) : 'uploaded'}`
+    : 'Sample data — June 2026';
 
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
-          onClick={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setOpen(false)} />
       )}
 
       <aside
@@ -47,33 +50,43 @@ export default function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              className={`
-                w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left
-                transition-colors text-sm
-                ${item.active
-                  ? 'bg-blue-600/15 text-blue-400 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}
-              `}
-            >
-              <span className="text-base shrink-0 w-5 text-center">{item.icon}</span>
-              {open && <span className="truncate">{item.label}</span>}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = view === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setView(item.id)}
+                className={`
+                  w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left
+                  transition-colors text-sm
+                  ${isActive
+                    ? 'bg-blue-600/15 text-blue-400 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}
+                `}
+              >
+                <span className="text-base shrink-0 w-5 text-center">{item.icon}</span>
+                {open && <span className="truncate">{item.label}</span>}
+              </button>
+            );
+          })}
         </nav>
 
-        {/* Demo badge */}
+        {/* Data badge */}
         <div className="px-2 pb-4 shrink-0">
           {open ? (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 text-center">
-              <div className="text-amber-400 text-[10px] font-bold uppercase tracking-wide">Demo Mode</div>
-              <div className="text-slate-500 text-[10px] mt-0.5">Sample data — June 2026</div>
+            <div className={`border rounded-lg px-3 py-2 text-center ${
+              dataMode === 'live'
+                ? 'bg-green-500/10 border-green-500/20'
+                : 'bg-amber-500/10 border-amber-500/20'
+            }`}>
+              <div className={`text-[10px] font-bold uppercase tracking-wide ${dataMode === 'live' ? 'text-green-400' : 'text-amber-400'}`}>
+                {dataMode === 'live' ? 'Live Data' : 'Demo Mode'}
+              </div>
+              <div className="text-slate-500 text-[10px] mt-0.5 truncate">{badgeLabel}</div>
             </div>
           ) : (
             <div className="flex justify-center">
-              <div className="w-2 h-2 rounded-full bg-amber-400" title="Demo Mode" />
+              <div className={`w-2 h-2 rounded-full ${dataMode === 'live' ? 'bg-green-400' : 'bg-amber-400'}`} />
             </div>
           )}
         </div>

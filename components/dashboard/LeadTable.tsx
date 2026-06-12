@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { leads, FUNNEL_STAGES, STAGE_COLORS } from '@/data/dzinehome';
-import type { FunnelStage } from '@/data/dzinehome';
+import { useDashboard } from '@/context/DashboardContext';
+import { FUNNEL_STAGES, STAGE_COLORS } from '@/lib/leadTypes';
+import type { FunnelStage } from '@/lib/leadTypes';
 
 const PAGE_SIZE = 25;
 
@@ -13,14 +14,15 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   lost:   { label: 'Lost',   cls: 'text-red-400 bg-red-500/10 border-red-500/20' },
 };
 
-function getStatus(stage: FunnelStage, daysInStage: number): keyof typeof STATUS_LABEL {
+function getStatus(stage: string, daysInStage: number): keyof typeof STATUS_LABEL {
   if (stage === 'Lost') return 'lost';
-  if (['Advance Received','Execution','Completed'].includes(stage)) return 'won';
+  if (['Advance Received', 'Execution', 'Completed'].includes(stage)) return 'won';
   if (daysInStage >= 7) return 'stuck';
   return 'active';
 }
 
 export default function LeadTable() {
+  const { leads } = useDashboard();
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState<FunnelStage | 'All'>('All');
   const [page, setPage] = useState(0);
@@ -37,7 +39,7 @@ export default function LeadTable() {
         l.owner.toLowerCase().includes(q);
       return matchStage && matchSearch;
     });
-  }, [search, stageFilter]);
+  }, [leads, search, stageFilter]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
@@ -53,14 +55,12 @@ export default function LeadTable() {
 
   return (
     <div className="bg-[#0d1530] border border-white/6 rounded-xl overflow-hidden">
-      {/* Table header */}
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-white/5">
         <div>
           <span className="text-white font-semibold text-sm">Lead Table</span>
           <span className="text-slate-500 text-xs ml-2">{filtered.length} leads</span>
         </div>
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          {/* Search */}
           <input
             type="text"
             placeholder="Search client, location…"
@@ -68,7 +68,6 @@ export default function LeadTable() {
             onChange={(e) => handleSearch(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500/50 w-44"
           />
-          {/* Stage filter */}
           <select
             value={stageFilter}
             onChange={(e) => handleStageChange(e.target.value as FunnelStage | 'All')}
@@ -82,12 +81,11 @@ export default function LeadTable() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-white/5 bg-white/2">
-              {['Lead ID','Client','Source','Location','Requirement','Stage','Owner','Last Contact','Value','Status'].map((col) => (
+              {['Lead ID', 'Client', 'Source', 'Location', 'Requirement', 'Stage', 'Owner', 'Last Contact', 'Value', 'Status'].map((col) => (
                 <th key={col} className="px-4 py-2.5 text-left text-slate-500 font-semibold text-[10px] uppercase tracking-wide whitespace-nowrap">
                   {col}
                 </th>
@@ -98,11 +96,9 @@ export default function LeadTable() {
             {paginated.map((lead, i) => {
               const status = getStatus(lead.stage, lead.daysInStage);
               const statusCfg = STATUS_LABEL[status];
+              const stageColor = STAGE_COLORS[lead.stage as FunnelStage] || 'bg-slate-500';
               return (
-                <tr
-                  key={lead.id}
-                  className={`border-b border-white/3 hover:bg-white/3 transition-colors ${i % 2 === 1 ? 'bg-white/1' : ''}`}
-                >
+                <tr key={lead.id} className={`border-b border-white/3 hover:bg-white/3 transition-colors ${i % 2 === 1 ? 'bg-white/1' : ''}`}>
                   <td className="px-4 py-2.5 font-mono text-slate-500 whitespace-nowrap text-[10px]">{lead.id}</td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <div className="text-white font-medium text-xs">{lead.client}</div>
@@ -112,7 +108,7 @@ export default function LeadTable() {
                   <td className="px-4 py-2.5 text-slate-400 max-w-[160px] truncate">{lead.requirement}</td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-300">
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STAGE_COLORS[lead.stage as FunnelStage]}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${stageColor}`} />
                       {lead.stage}
                     </span>
                   </td>
@@ -142,7 +138,6 @@ export default function LeadTable() {
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/5">
           <span className="text-slate-600 text-xs">
@@ -156,7 +151,7 @@ export default function LeadTable() {
             >
               ‹ Prev
             </button>
-            {Array.from({ length: totalPages }, (_, i) => (
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => (
               <button
                 key={i}
                 onClick={() => setPage(i)}
@@ -165,6 +160,7 @@ export default function LeadTable() {
                 {i + 1}
               </button>
             ))}
+            {totalPages > 7 && <span className="text-slate-600 text-xs px-1">…{totalPages}</span>}
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}

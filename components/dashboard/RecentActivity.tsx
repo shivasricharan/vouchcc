@@ -1,6 +1,6 @@
-import { dzinehomeStats } from '@/data/dzinehome';
+'use client';
 
-const { recentActivity } = dzinehomeStats;
+import { useDashboard } from '@/context/DashboardContext';
 
 const typeConfig = {
   won:    { dot: 'bg-green-400',  label: 'Won' },
@@ -10,16 +10,22 @@ const typeConfig = {
 };
 
 export default function RecentActivity() {
+  const { stats } = useDashboard();
+  const { recentActivity } = stats;
+
   return (
     <div className="bg-[#0d1530] border border-white/6 rounded-xl p-4">
       <div className="mb-4">
         <div className="text-white font-semibold text-sm">Recent Activity</div>
-        <div className="text-slate-500 text-xs">Last 48 hours</div>
+        <div className="text-slate-500 text-xs">Latest changes</div>
       </div>
 
       <div className="space-y-3">
+        {recentActivity.length === 0 && (
+          <div className="text-slate-600 text-xs text-center py-4">No activity data</div>
+        )}
         {recentActivity.map((item, i) => {
-          const config = typeConfig[item.type as keyof typeof typeConfig];
+          const config = typeConfig[item.type as keyof typeof typeConfig] || typeConfig.update;
           return (
             <div key={i} className="flex gap-3">
               <div className="flex flex-col items-center">

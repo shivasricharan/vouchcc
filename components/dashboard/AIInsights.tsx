@@ -1,41 +1,7 @@
-const insights = [
-  {
-    type: 'warning',
-    icon: '⚠️',
-    title: 'Negotiation stage is your biggest bottleneck',
-    body: '3 of 7 leads in Negotiation have been stuck for 7+ days. Total at-risk value: ₹245L. Kavitha and Pradeep are the assigned owners — direct founder conversations could unlock these.',
-  },
-  {
-    type: 'critical',
-    icon: '🔴',
-    title: 'Referral leads convert at 3× — but are under-followed',
-    body: '22 leads came via Referral. Only 6 have been contacted within 48 hrs. Referral leads have the highest close rate across all sources — faster first response will directly increase revenue.',
-  },
-  {
-    type: 'insight',
-    icon: '📈',
-    title: 'WhatsApp is your top acquisition channel (38%)',
-    body: '38 leads originated on WhatsApp, but 11 are unassigned and 7 haven\'t had a first contact. Every day of delay drops response quality significantly for high-intent leads.',
-  },
-  {
-    type: 'positive',
-    icon: '✅',
-    title: 'Kavitha is handling disproportionate load',
-    body: 'Kavitha R. is assigned 23+ active leads including 4 of the 5 highest-value deals. Consider distributing Negotiation support to Pradeep to reduce single-point risk.',
-  },
-  {
-    type: 'insight',
-    icon: '💡',
-    title: '7 quotations sent have had no response in >5 days',
-    body: 'These represent ₹390L+ in pending decisions. A structured follow-up sequence (call + revised quote if needed) within the next 48 hours could move 3–4 of these to Negotiation.',
-  },
-  {
-    type: 'positive',
-    icon: '🏆',
-    title: '3 completed projects this period — all via Referral',
-    body: 'DZH-092 to 094 were all referral-originated. Requesting testimonials and referrals from completed clients now can seed 5–8 new high-quality leads in the next 30 days.',
-  },
-];
+'use client';
+
+import { useMemo } from 'react';
+import { useDashboard } from '@/context/DashboardContext';
 
 const typeStyles: Record<string, string> = {
   critical: 'border-red-500/20 bg-red-500/5',
@@ -45,22 +11,96 @@ const typeStyles: Record<string, string> = {
 };
 
 export default function AIInsights() {
+  const { stats, leads } = useDashboard();
+
+  const insights = useMemo(() => {
+    const topSource = Object.entries(stats.sourceCounts).sort((a, b) => b[1] - a[1])[0];
+    const topOwner = Object.entries(stats.teamCounts)
+      .filter(([k]) => k !== 'Unassigned')
+      .sort((a, b) => b[1] - a[1])[0];
+    const unassigned = stats.teamCounts['Unassigned'] || 0;
+    const negotiationStuck = leads.filter((l) => l.stage === 'Negotiation' && l.daysInStage >= 7).length;
+    const referralLeads = leads.filter((l) => l.source === 'Referral');
+    const referralContacted = referralLeads.filter((l) => l.daysInStage <= 2).length;
+    const completedReferral = leads.filter((l) => l.stage === 'Completed' && l.source === 'Referral').length;
+
+    const list = [];
+
+    if (negotiationStuck >= 2) {
+      list.push({
+        type: 'warning', icon: '⚠️',
+        title: 'Negotiation stage is your biggest bottleneck',
+        body: `${negotiationStuck} of ${stats.stageCounts['Negotiation'] || 0} leads in Negotiation have been stuck for 7+ days. Total at-risk value: ₹${stats.atRiskValue}L. Direct founder conversations could unlock these.`,
+      });
+    }
+
+    if (topSource && topSource[1] >= 5) {
+      const contactRate = Math.round((referralContacted / Math.max(referralLeads.length, 1)) * 100);
+      list.push({
+        type: 'critical', icon: '🔴',
+        title: `${topSource[0]} is your top acquisition channel (${Math.round((topSource[1] / stats.total) * 100)}%)`,
+        body: `${topSource[1]} leads came via ${topSource[0]}. ${contactRate < 50 ? `Only ${contactRate}% contacted within 48 hrs — faster first response directly increases revenue.` : 'Good contact rate — keep following up promptly.'}`,
+      });
+    }
+
+    if (unassigned > 0) {
+      list.push({
+        type: 'insight', icon: '📈',
+        title: `${unassigned} leads are unassigned`,
+        body: `${unassigned} leads have no owner. Every day of delay drops response quality for high-intent leads. Assign immediately.`,
+      });
+    }
+
+    if (topOwner && topOwner[1] >= 15) {
+      list.push({
+        type: 'positive', icon: '✅',
+        title: `${topOwner[0]} is handling disproportionate load`,
+        body: `${topOwner[0]} is assigned ${topOwner[1]}+ active leads. Consider distributing high-value Negotiation support to reduce single-point risk.`,
+      });
+    }
+
+    const stuckQuotations = leads.filter((l) => l.stage === 'Quotation Sent' && l.daysInStage >= 5);
+    if (stuckQuotations.length >= 3) {
+      const quotationValue = stuckQuotations.reduce((s, l) => s + l.value, 0);
+      list.push({
+        type: 'insight', icon: '💡',
+        title: `${stuckQuotations.length} quotations sent with no response in >5 days`,
+        body: `These represent ₹${quotationValue}L+ in pending decisions. A structured follow-up sequence (call + revised quote if needed) within 48 hours could move several to Negotiation.`,
+      });
+    }
+
+    if (completedReferral >= 2) {
+      list.push({
+        type: 'positive', icon: '🏆',
+        title: `${completedReferral} completed projects — all via Referral`,
+        body: `Requesting testimonials from completed clients now can seed 5–8 new high-quality leads in the next 30 days.`,
+      });
+    }
+
+    if (list.length === 0) {
+      list.push({
+        type: 'insight', icon: '📊',
+        title: 'Upload your data for personalised insights',
+        body: 'Click "Upload Data" to load your own lead sheet. Vouch will analyse patterns and show actionable insights specific to your pipeline.',
+      });
+    }
+
+    return list;
+  }, [stats, leads]);
+
   return (
     <div className="bg-[#0d1530] border border-white/6 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-base">🧠</span>
         <div>
           <div className="text-white font-semibold text-sm">Pipeline Insights</div>
-          <div className="text-slate-500 text-xs">Pattern analysis across 100 leads</div>
+          <div className="text-slate-500 text-xs">Pattern analysis across {stats.total} leads</div>
         </div>
       </div>
 
       <div className="space-y-2.5">
         {insights.map((insight, i) => (
-          <div
-            key={i}
-            className={`border rounded-lg px-3.5 py-2.5 ${typeStyles[insight.type]}`}
-          >
+          <div key={i} className={`border rounded-lg px-3.5 py-2.5 ${typeStyles[insight.type]}`}>
             <div className="flex items-start gap-2.5">
               <span className="text-sm shrink-0 mt-0.5">{insight.icon}</span>
               <div>

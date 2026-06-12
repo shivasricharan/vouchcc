@@ -1,9 +1,13 @@
-import { dzinehomeStats, STAGE_COLORS } from '@/data/dzinehome';
-import type { FunnelStage } from '@/data/dzinehome';
+'use client';
 
-const { topStuckLeads, stuckCount } = dzinehomeStats;
+import { useDashboard } from '@/context/DashboardContext';
+import { STAGE_COLORS } from '@/lib/leadTypes';
+import type { FunnelStage } from '@/lib/leadTypes';
 
 export default function StuckLeads() {
+  const { stats } = useDashboard();
+  const { topStuckLeads, stuckCount } = stats;
+
   return (
     <div className="bg-[#0d1530] border border-orange-500/20 rounded-xl overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
@@ -24,7 +28,7 @@ export default function StuckLeads() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-white/5">
-              {['Lead ID','Client','Stage','Assigned To','Days Stuck','Value','Next Action'].map((col) => (
+              {['Lead ID', 'Client', 'Stage', 'Assigned To', 'Days Stuck', 'Value', 'Next Action'].map((col) => (
                 <th key={col} className="px-4 py-2.5 text-left text-slate-500 font-semibold text-[10px] uppercase tracking-wide whitespace-nowrap">
                   {col}
                 </th>
@@ -35,18 +39,15 @@ export default function StuckLeads() {
             {topStuckLeads.map((lead, i) => {
               const isCritical = lead.daysInStage >= 9 || lead.value >= 80;
               return (
-                <tr
-                  key={lead.id}
-                  className={`border-b border-white/4 transition-colors hover:bg-white/3 ${i % 2 === 0 ? '' : 'bg-white/1'}`}
-                >
+                <tr key={lead.id} className={`border-b border-white/4 transition-colors hover:bg-white/3 ${i % 2 === 0 ? '' : 'bg-white/1'}`}>
                   <td className="px-4 py-2.5 font-mono text-slate-400 whitespace-nowrap">{lead.id}</td>
                   <td className="px-4 py-2.5">
                     <div className="text-white font-medium whitespace-nowrap">{lead.client}</div>
                     <div className="text-slate-600 text-[10px]">{lead.location}</div>
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${STAGE_COLORS[lead.stage as FunnelStage]}`} />
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${STAGE_COLORS[lead.stage as FunnelStage] || 'bg-slate-500'}`} />
                       {lead.stage}
                     </span>
                   </td>
@@ -74,6 +75,13 @@ export default function StuckLeads() {
                 </tr>
               );
             })}
+            {topStuckLeads.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-600 text-sm">
+                  No stuck leads — everything is moving!
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
