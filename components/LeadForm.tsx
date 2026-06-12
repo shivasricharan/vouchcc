@@ -26,13 +26,6 @@ const initialFormData: FormData = {
   interestedInPilot: '',
 };
 
-// URL-encode an object for Netlify Forms submission
-function encode(data: Record<string, string>) {
-  return Object.entries(data)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join('&');
-}
-
 export default function LeadForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -50,33 +43,26 @@ export default function LeadForm() {
     setErrorMessage('');
 
     try {
-      // Primary: POST JSON to API route (swap in Google Sheets / Supabase here later)
-      const apiResponse = await fetch('/api/leads', {
+      // POST to /api/leads — swap in Google Sheets / Supabase here when ready
+      const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const apiData = await apiResponse.json();
 
-      if (!apiResponse.ok || !apiData.success) {
-        throw new Error(apiData.message || 'API submission failed');
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setStatus('success');
+        setFormData(initialFormData);
+      } else {
+        throw new Error(data.message || 'Something went wrong. Please try again.');
       }
-
-      // Secondary: Netlify Forms (fire-and-forget — doesn't block success state)
-      fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: encode({ 'form-name': 'pilot-application', ...formData }),
-      }).catch(() => {
-        // Netlify form submission is a bonus capture — API route is primary
-      });
-
-      setStatus('success');
-      setFormData(initialFormData);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong.';
       setStatus('error');
-      setErrorMessage(message.includes('API') ? 'Something went wrong. Please try again.' : message);
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      );
     }
   }
 
@@ -87,22 +73,6 @@ export default function LeadForm() {
 
   return (
     <section id="lead-form" className="py-24 bg-navy-800/40">
-      {/*
-        Hidden static form — required for Netlify to detect and register the form
-        at build time. Field names must match those in the JS-submitted form below.
-      */}
-      <form name="pilot-application" data-netlify="true" hidden>
-        <input name="name" />
-        <input name="businessName" />
-        <input name="phone" />
-        <input name="email" />
-        <input name="businessType" />
-        <input name="city" />
-        <input name="leadSource" />
-        <textarea name="biggestProblem" />
-        <input name="interestedInPilot" />
-      </form>
-
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="inline-block bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1 mb-4">
@@ -132,13 +102,9 @@ export default function LeadForm() {
           </div>
         ) : (
           <form
-            name="pilot-application"
-            data-netlify="true"
             onSubmit={handleSubmit}
             className="bg-navy-800/60 border border-white/10 rounded-2xl p-8 space-y-6"
           >
-            <input type="hidden" name="form-name" value="pilot-application" />
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className={labelClass} htmlFor="name">
