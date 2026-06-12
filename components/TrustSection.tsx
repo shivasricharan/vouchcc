@@ -48,9 +48,9 @@ export default function TrustSection() {
             <div className="flex items-center gap-3 bg-green-500/5 border border-green-500/20 rounded-xl p-4">
               <div className="text-2xl">✅</div>
               <div>
-                <div className="text-white font-semibold text-sm">DPDP Act aligned</div>
+                <div className="text-white font-semibold text-sm">Privacy-first by design.</div>
                 <div className="text-slate-500 text-xs mt-0.5">
-                  Designed with India&apos;s Digital Personal Data Protection framework in mind.
+                  Built to respect customer data, consent, and responsible follow-up.
                 </div>
               </div>
             </div>

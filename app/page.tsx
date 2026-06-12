@@ -6,6 +6,7 @@ import HowItWorksSection from '@/components/HowItWorksSection';
 import DashboardSection from '@/components/DashboardSection';
 import PilotSection from '@/components/PilotSection';
 import TrustSection from '@/components/TrustSection';
+import WhatsAppSection from '@/components/WhatsAppSection';
 import LeadForm from '@/components/LeadForm';
 import Footer from '@/components/Footer';
 
@@ -20,6 +21,7 @@ export default function Home() {
       <DashboardSection />
       <PilotSection />
       <TrustSection />
+      <WhatsAppSection />
       <LeadForm />
       <Footer />
     </main>

@@ -1,19 +1,8 @@
-const pipelineStages = [
-  { label: 'New', count: 12, color: 'bg-slate-500', width: 'w-full' },
-  { label: 'Contacted', count: 9, color: 'bg-blue-500', width: 'w-3/4' },
-  { label: 'Qualified', count: 6, color: 'bg-violet-500', width: 'w-1/2' },
-  { label: 'Proposal', count: 4, color: 'bg-amber-500', width: 'w-1/3' },
-  { label: 'Negotiation', count: 2, color: 'bg-orange-500', width: 'w-1/4' },
-  { label: 'Won', count: 1, color: 'bg-green-500', width: 'w-1/6' },
-];
+import { dashboardStats } from '@/data/sampleLeads';
 
-const sources = [
-  { name: 'WhatsApp', leads: 18, pct: 42, color: 'bg-green-500' },
-  { name: 'Referral', leads: 12, pct: 28, color: 'bg-blue-500' },
-  { name: 'Instagram', leads: 8, pct: 19, color: 'bg-pink-500' },
-  { name: 'Website', leads: 4, pct: 9, color: 'bg-violet-500' },
-  { name: 'Other', leads: 1, pct: 2, color: 'bg-slate-500' },
-];
+const { total, hot, pendingCount, overdueCount, lostCount, followUpDueToday, pipelineValue, stageCounts, sourceCountsWithPct, conversionRate } = dashboardStats;
+
+const maxStageCount = Math.max(...stageCounts.map((s) => s.count), 1);
 
 export default function DashboardSection() {
   return (
@@ -46,7 +35,7 @@ export default function DashboardSection() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-slate-500">Live</span>
+              <span className="text-xs text-slate-500">Sample data</span>
             </div>
           </div>
 
@@ -54,10 +43,10 @@ export default function DashboardSection() {
             {/* KPI row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { label: 'Total Leads', value: '43', sub: '+8 this week', color: 'text-white', dot: 'bg-blue-400' },
-                { label: 'Hot Leads', value: '11', sub: 'Need reply today', color: 'text-amber-400', dot: 'bg-amber-400' },
-                { label: 'Pending Follow-up', value: '7', sub: '3 overdue', color: 'text-orange-400', dot: 'bg-orange-400' },
-                { label: 'Lost This Month', value: '4', sub: '-2 vs last month', color: 'text-red-400', dot: 'bg-red-400' },
+                { label: 'Total Leads', value: String(total), sub: `${dashboardStats.active} active`, color: 'text-white', dot: 'bg-blue-400' },
+                { label: 'Hot Leads', value: String(hot), sub: 'Need action now', color: 'text-amber-400', dot: 'bg-amber-400' },
+                { label: 'Pending Follow-up', value: String(pendingCount), sub: `${overdueCount} overdue`, color: 'text-orange-400', dot: 'bg-orange-400' },
+                { label: 'Lost This Month', value: String(lostCount), sub: `${dashboardStats.wonCount} won`, color: 'text-red-400', dot: 'bg-red-400' },
               ].map((kpi) => (
                 <div
                   key={kpi.label}
@@ -81,16 +70,16 @@ export default function DashboardSection() {
                   Stage-wise Pipeline
                 </h3>
                 <div className="space-y-3">
-                  {pipelineStages.map((stage) => (
+                  {stageCounts.map((stage) => (
                     <div key={stage.label} className="flex items-center gap-3">
-                      <span className="text-slate-500 text-xs w-20 shrink-0">{stage.label}</span>
+                      <span className="text-slate-500 text-xs w-24 shrink-0">{stage.label}</span>
                       <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${stage.color} rounded-full transition-all`}
-                          style={{ width: `${(stage.count / 12) * 100}%` }}
+                          style={{ width: `${(stage.count / maxStageCount) * 100}%` }}
                         />
                       </div>
-                      <span className="text-slate-400 text-xs w-6 text-right">{stage.count}</span>
+                      <span className="text-slate-400 text-xs w-5 text-right">{stage.count}</span>
                     </div>
                   ))}
                 </div>
@@ -103,16 +92,16 @@ export default function DashboardSection() {
                   Source-wise Leads
                 </h3>
                 <div className="space-y-3">
-                  {sources.map((source) => (
+                  {sourceCountsWithPct.map((source) => (
                     <div key={source.name} className="flex items-center gap-3">
-                      <span className="text-slate-500 text-xs w-20 shrink-0">{source.name}</span>
+                      <span className="text-slate-500 text-xs w-24 shrink-0">{source.name}</span>
                       <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${source.color} rounded-full`}
                           style={{ width: `${source.pct}%` }}
                         />
                       </div>
-                      <span className="text-slate-400 text-xs w-6 text-right">{source.leads}</span>
+                      <span className="text-slate-400 text-xs w-5 text-right">{source.leads}</span>
                     </div>
                   ))}
                 </div>
@@ -124,25 +113,28 @@ export default function DashboardSection() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                 <span className="text-amber-400 text-sm font-bold">Follow-up Due Today</span>
-                <span className="ml-auto bg-amber-500/20 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full">7</span>
+                <span className="ml-auto bg-amber-500/20 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                  {pendingCount}
+                </span>
               </div>
               <div className="space-y-3">
-                {[
-                  { name: 'Priya Sharma', business: 'Bliss Interiors', status: 'Proposal sent 5 days ago', hot: true },
-                  { name: 'Rajan Mehta', business: 'Studio M Architecture', status: 'Site visit done, no reply', hot: true },
-                  { name: 'Deepa Iyer', business: 'Self — Home Reno', status: 'First contact 3 days ago', hot: false },
-                ].map((lead) => (
+                {followUpDueToday.map((lead) => (
                   <div key={lead.name} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-white text-sm font-medium">{lead.name}</span>
-                        {lead.hot && (
+                        {lead.priority === 'High' && (
                           <span className="bg-red-500/20 text-red-400 text-xs px-1.5 py-0.5 rounded font-bold">HOT</span>
                         )}
+                        {lead.nextFollowUp < '2026-06-12' && (
+                          <span className="bg-orange-500/20 text-orange-400 text-xs px-1.5 py-0.5 rounded font-bold">OVERDUE</span>
+                        )}
                       </div>
-                      <div className="text-slate-500 text-xs mt-0.5">{lead.business} · {lead.status}</div>
+                      <div className="text-slate-500 text-xs mt-0.5">
+                        {lead.business} · {lead.stage} · {lead.city}
+                      </div>
                     </div>
-                    <button className="text-xs bg-white/5 hover:bg-white/10 text-slate-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors">
+                    <button className="text-xs bg-white/5 hover:bg-white/10 text-slate-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors shrink-0">
                       Follow up
                     </button>
                   </div>
@@ -153,9 +145,24 @@ export default function DashboardSection() {
             {/* Conversion insight */}
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Conversion Rate', value: '18%', sub: 'Enquiry → Won', trend: '↑ 3% vs last month' },
-                { label: 'Avg. Response Time', value: '4.2 hrs', sub: 'First reply to lead', trend: '↓ 1.1 hrs improved' },
-                { label: 'Pipeline Value', value: '₹48L', sub: 'Across open stages', trend: '+₹12L this month' },
+                {
+                  label: 'Conversion Rate',
+                  value: `${conversionRate}%`,
+                  sub: 'Enquiry → Won',
+                  trend: '↑ 3% vs last month',
+                },
+                {
+                  label: 'Avg. Response Time',
+                  value: '4.2 hrs',
+                  sub: 'First reply to lead',
+                  trend: '↓ 1.1 hrs improved',
+                },
+                {
+                  label: 'Pipeline Value',
+                  value: `₹${pipelineValue}L`,
+                  sub: 'Active stages only',
+                  trend: `+₹${Math.round(pipelineValue * 0.2)}L this month`,
+                },
               ].map((metric) => (
                 <div key={metric.label} className="bg-navy-900/40 border border-white/8 rounded-xl p-4">
                   <div className="text-slate-500 text-xs mb-1">{metric.label}</div>

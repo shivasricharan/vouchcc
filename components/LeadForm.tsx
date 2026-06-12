@@ -26,6 +26,13 @@ const initialFormData: FormData = {
   interestedInPilot: '',
 };
 
+// URL-encode an object for Netlify Forms submission
+function encode(data: Record<string, string>) {
+  return Object.entries(data)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+}
+
 export default function LeadForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -43,24 +50,33 @@ export default function LeadForm() {
     setErrorMessage('');
 
     try {
-      const response = await fetch('/api/leads', {
+      // Primary: POST JSON to API route (swap in Google Sheets / Supabase here later)
+      const apiResponse = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+      const apiData = await apiResponse.json();
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setStatus('success');
-        setFormData(initialFormData);
-      } else {
-        setStatus('error');
-        setErrorMessage(data.message || 'Something went wrong. Please try again.');
+      if (!apiResponse.ok || !apiData.success) {
+        throw new Error(apiData.message || 'API submission failed');
       }
-    } catch {
+
+      // Secondary: Netlify Forms (fire-and-forget — doesn't block success state)
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: encode({ 'form-name': 'pilot-application', ...formData }),
+      }).catch(() => {
+        // Netlify form submission is a bonus capture — API route is primary
+      });
+
+      setStatus('success');
+      setFormData(initialFormData);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong.';
       setStatus('error');
-      setErrorMessage('Network error. Please check your connection and try again.');
+      setErrorMessage(message.includes('API') ? 'Something went wrong. Please try again.' : message);
     }
   }
 
@@ -71,6 +87,22 @@ export default function LeadForm() {
 
   return (
     <section id="lead-form" className="py-24 bg-navy-800/40">
+      {/*
+        Hidden static form — required for Netlify to detect and register the form
+        at build time. Field names must match those in the JS-submitted form below.
+      */}
+      <form name="pilot-application" data-netlify="true" hidden>
+        <input name="name" />
+        <input name="businessName" />
+        <input name="phone" />
+        <input name="email" />
+        <input name="businessType" />
+        <input name="city" />
+        <input name="leadSource" />
+        <textarea name="biggestProblem" />
+        <input name="interestedInPilot" />
+      </form>
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="inline-block bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1 mb-4">
@@ -80,7 +112,7 @@ export default function LeadForm() {
             Tell us about your business.
           </h2>
           <p className="text-lg text-slate-400">
-            We&apos;ll review your application and reach out within 24 hours.
+            We&apos;ll review your details and get back with next steps.
           </p>
         </div>
 
@@ -89,7 +121,7 @@ export default function LeadForm() {
             <div className="text-5xl mb-4">🎉</div>
             <h3 className="text-white font-black text-2xl mb-3">Application received!</h3>
             <p className="text-slate-400 text-lg">
-              Thanks! We&apos;ll be in touch within 24 hours to discuss your pilot setup.
+              Thanks! We&apos;ll review your details and get back with next steps.
             </p>
             <button
               onClick={() => setStatus('idle')}
@@ -100,9 +132,13 @@ export default function LeadForm() {
           </div>
         ) : (
           <form
+            name="pilot-application"
+            data-netlify="true"
             onSubmit={handleSubmit}
             className="bg-navy-800/60 border border-white/10 rounded-2xl p-8 space-y-6"
           >
+            <input type="hidden" name="form-name" value="pilot-application" />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className={labelClass} htmlFor="name">
@@ -265,7 +301,7 @@ export default function LeadForm() {
               <label className={labelClass} htmlFor="interestedInPilot">
                 Interested in the Vouch pilot?
               </label>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 {['Yes, definitely', 'Yes, want to know more', 'Not sure yet'].map((option) => (
                   <label
                     key={option}
