@@ -17,6 +17,7 @@ import FunnelView from './views/FunnelView';
 import TeamsView from './views/TeamsView';
 import InsightsView from './views/InsightsView';
 import SettingsView from './views/SettingsView';
+import GuideView from './views/GuideView';
 
 function DashboardContent() {
   const { view, showUpload } = useDashboard();
@@ -51,6 +52,7 @@ function DashboardContent() {
           {view === 'teams'    && <TeamsView />}
           {view === 'insights' && <InsightsView />}
           {view === 'settings' && <SettingsView />}
+          {view === 'guide'    && <GuideView />}
         </main>
       </div>
       {showUpload && <UploadModal />}

@@ -11,6 +11,7 @@ const NAV_ITEMS: { label: string; icon: string; id: ViewId }[] = [
   { label: 'Teams',     icon: '◯', id: 'teams' },
   { label: 'Insights',  icon: '◆', id: 'insights' },
   { label: 'Settings',  icon: '⚙', id: 'settings' },
+  { label: 'Guide',     icon: '?', id: 'guide' },
 ];
 
 export default function Sidebar() {

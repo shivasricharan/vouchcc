@@ -5,7 +5,7 @@ import { leads as demoLeads } from '@/data/dzinehome';
 import { computeStats } from '@/lib/computeStats';
 import type { UniversalLead, ComputedStats } from '@/lib/leadTypes';
 
-export type ViewId = 'dashboard' | 'leads' | 'funnel' | 'teams' | 'insights' | 'settings';
+export type ViewId = 'dashboard' | 'leads' | 'funnel' | 'teams' | 'insights' | 'settings' | 'guide';
 
 interface DashboardState {
   view: ViewId;
