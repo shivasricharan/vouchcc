@@ -9,8 +9,8 @@ interface FormData {
   email: string;
   businessType: string;
   city: string;
-  leadSource: string;
-  biggestProblem: string;
+  currentLeadSource: string;
+  biggestLeadProblem: string;
   interestedInPilot: string;
 }
 
@@ -21,15 +21,14 @@ const initialFormData: FormData = {
   email: '',
   businessType: '',
   city: '',
-  leadSource: '',
-  biggestProblem: '',
+  currentLeadSource: '',
+  biggestLeadProblem: '',
   interestedInPilot: '',
 };
 
 export default function LeadForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -39,30 +38,42 @@ export default function LeadForm() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (status === 'submitting') return;
     setStatus('submitting');
-    setErrorMessage('');
+
+    const payload = {
+      ...formData,
+      sourcePage: 'VouchCC Website',
+    };
 
     try {
-      // POST to /api/leads — swap in Google Sheets / Supabase here when ready
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const scriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL;
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setStatus('success');
-        setFormData(initialFormData);
+      if (scriptUrl) {
+        // POST to Google Apps Script web app.
+        // mode: no-cors avoids CORS preflight issues with the Google redirect chain;
+        // the response is opaque but the data is reliably saved by the script.
+        await fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        });
       } else {
-        throw new Error(data.message || 'Something went wrong. Please try again.');
+        // Fallback for local dev when the env var is not yet configured
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message);
       }
-    } catch (err) {
+
+      setStatus('success');
+      setFormData(initialFormData);
+    } catch {
       setStatus('error');
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
-      );
     }
   }
 
@@ -91,7 +102,7 @@ export default function LeadForm() {
             <div className="text-5xl mb-4">🎉</div>
             <h3 className="text-white font-black text-2xl mb-3">Application received!</h3>
             <p className="text-slate-400 text-lg">
-              Thanks! We&apos;ll review your details and get back with next steps.
+              Thank you. Your pilot request has been received.
             </p>
             <button
               onClick={() => setStatus('idle')}
@@ -221,13 +232,13 @@ export default function LeadForm() {
             </div>
 
             <div>
-              <label className={labelClass} htmlFor="leadSource">
+              <label className={labelClass} htmlFor="currentLeadSource">
                 Where do most of your leads come from?
               </label>
               <select
-                id="leadSource"
-                name="leadSource"
-                value={formData.leadSource}
+                id="currentLeadSource"
+                name="currentLeadSource"
+                value={formData.currentLeadSource}
                 onChange={handleChange}
                 className={inputClass}
               >
@@ -249,14 +260,14 @@ export default function LeadForm() {
             </div>
 
             <div>
-              <label className={labelClass} htmlFor="biggestProblem">
+              <label className={labelClass} htmlFor="biggestLeadProblem">
                 What is your biggest lead management problem?
               </label>
               <textarea
-                id="biggestProblem"
-                name="biggestProblem"
+                id="biggestLeadProblem"
+                name="biggestLeadProblem"
                 rows={3}
-                value={formData.biggestProblem}
+                value={formData.biggestLeadProblem}
                 onChange={handleChange}
                 placeholder="e.g. Leads come in on WhatsApp and we forget to follow up. No one knows which leads are hot..."
                 className={`${inputClass} resize-none`}
@@ -291,7 +302,7 @@ export default function LeadForm() {
 
             {status === 'error' && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
-                {errorMessage}
+                Something went wrong. Please try again or contact us directly.
               </div>
             )}
 
@@ -300,7 +311,17 @@ export default function LeadForm() {
               disabled={status === 'submitting'}
               className="w-full bg-accent hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl text-base transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 hover:-translate-y-0.5 disabled:hover:translate-y-0"
             >
-              {status === 'submitting' ? 'Submitting…' : 'Submit Application'}
+              {status === 'submitting' ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Submitting…
+                </span>
+              ) : (
+                'Submit Application'
+              )}
             </button>
 
             <p className="text-slate-600 text-xs text-center">

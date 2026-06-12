@@ -26,7 +26,9 @@ npm install
 # 3. Copy env template
 cp .env.example .env.local
 
-# 4. Start development server
+# 4. Add your Google Apps Script URL to .env.local (see below)
+
+# 5. Start development server
 npm run dev
 ```
 
@@ -49,12 +51,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ```
 vouchcc/
-├── app/                    # Next.js App Router
-│   ├── layout.tsx          # Root layout + SEO metadata
-│   ├── page.tsx            # Homepage
-│   ├── globals.css         # Global styles + Tailwind
-│   └── api/leads/          # Lead form API route
-├── components/             # Page sections
+├── app/                         # Next.js App Router
+│   ├── layout.tsx               # Root layout + SEO metadata
+│   ├── page.tsx                 # Homepage
+│   ├── globals.css              # Global styles + Tailwind
+│   └── api/leads/               # Fallback API route (dev only)
+├── components/                  # Page sections
 │   ├── Navbar.tsx
 │   ├── HeroSection.tsx
 │   ├── ProblemSection.tsx
@@ -63,38 +65,75 @@ vouchcc/
 │   ├── DashboardSection.tsx
 │   ├── PilotSection.tsx
 │   ├── TrustSection.tsx
+│   ├── WhatsAppSection.tsx
 │   ├── LeadForm.tsx
 │   └── Footer.tsx
-├── public/                 # Static assets
-├── CLAUDE.md               # AI context + project docs
-├── netlify.toml            # Netlify deployment config
-└── .env.example            # Environment variables template
+├── data/
+│   ├── sample-leads.csv         # 30 sample leads for dashboard preview
+│   └── sampleLeads.ts           # Typed export + computed dashboard stats
+├── google-apps-script/
+│   └── code.gs                  # Paste into Google Apps Script editor
+├── public/                      # Static assets
+├── CLAUDE.md                    # AI context + project docs
+├── netlify.toml                 # Netlify deployment config
+└── .env.example                 # Environment variables template
 ```
 
 ---
 
-## Lead Form API
+## Google Sheets Backend Setup
 
-The form at `/api/leads` currently stores submissions in memory (resets on restart).
+The lead form submits directly to a Google Apps Script web app which appends each row to a Google Sheet. No server needed — runs entirely on Google's infrastructure.
 
-**To persist leads, connect one of:**
-- **Google Sheets** — add the `googleapis` package and service account credentials
-- **Supabase** — free Postgres with REST API
-- **Airtable** — no-code database with API
-- **Webhook** — send to Zapier, Make.com, or any endpoint
+### Steps
 
-See `CLAUDE.md` for detailed integration steps.
+1. Create a new Google Sheet at [sheets.google.com](https://sheets.google.com).
+2. Open **Extensions → Apps Script**.
+3. Delete any default code in the editor.
+4. Paste the contents of `google-apps-script/code.gs` from this repo.
+5. Click **Save** (Ctrl+S / Cmd+S).
+6. Click **Deploy → New deployment**.
+7. Click the gear icon next to "Select type" and choose **Web app**.
+8. Set **Execute as**: Me.
+9. Set **Who has access**: Anyone.
+10. Click **Deploy**.
+11. Copy the **Web App URL** shown after deployment.
+12. Add it to Netlify: **Site settings → Environment variables → Add variable**:
+    - Key: `NEXT_PUBLIC_GOOGLE_SCRIPT_URL`
+    - Value: *(paste the Web App URL)*
+13. Trigger a **Redeploy** on Netlify (or push a new commit).
+
+### Sheet columns (auto-created on first submission)
+
+| Column | Field |
+|--------|-------|
+| Timestamp | Submission date/time |
+| Name | Lead's name |
+| Business Name | Company or studio |
+| Phone / WhatsApp | Contact number |
+| Email | Email address |
+| Business Type | e.g. Interior Designer |
+| City | Location |
+| Current Lead Source | WhatsApp / Instagram / etc. |
+| Biggest Lead Problem | Free text |
+| Interested in Pilot | Yes / Maybe / No |
+| Source Page | Always "VouchCC Website" |
+| Status | Always "New" on entry |
+
+### Local development without the URL
+
+If `NEXT_PUBLIC_GOOGLE_SCRIPT_URL` is not set in `.env.local`, the form falls back to the local `/api/leads` API route (in-memory, resets on restart). Submissions won't persist but the form UI works end-to-end for testing.
 
 ---
 
 ## Deploy on Netlify
 
-1. Push to GitHub
-2. Go to [Netlify](https://netlify.com) → Add new site → Import from GitHub
+1. Push repo to GitHub.
+2. Go to [Netlify](https://netlify.com) → **Add new site → Import from GitHub**.
 3. Build command: `npm run build`
 4. Publish directory: `.next`
-5. Add environment variables from `.env.example`
-6. Deploy
+5. Add `NEXT_PUBLIC_GOOGLE_SCRIPT_URL` in **Site settings → Environment variables**.
+6. Click **Deploy**.
 
 The `netlify.toml` and `@netlify/plugin-nextjs` handle the Next.js adapter automatically.
 
@@ -106,6 +145,7 @@ The `netlify.toml` and `@netlify/plugin-nextjs` handle the Next.js adapter autom
 - **TypeScript** — type safety
 - **Tailwind CSS** — utility-first styling
 - **Inter** — font
+- **Google Apps Script** — form submission backend (no external dependencies)
 
 ---
 
