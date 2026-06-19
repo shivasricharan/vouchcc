@@ -1,5 +1,18 @@
 import type { UniversalLead, LeadSource } from '@/lib/leadTypes';
 
+function lead(
+  id: string, client: string, source: LeadSource, location: string,
+  requirement: string, stage: string, owner: string, lastContacted: string,
+  daysInStage: number, value: number, probability: number, nextAction: string,
+): UniversalLead {
+  return {
+    id, client, phone: '—', email: '—', source, location, requirement, stage,
+    status: probability >= 85 ? 'won' : probability === 0 ? 'lost' : daysInStage >= 7 ? 'stuck' : 'active',
+    ownerTeam: '—', owner, createdAt: '—', lastContacted, daysInStage, daysSinceUpdate: daysInStage,
+    value, probability, nextAction,
+  };
+}
+
 export interface SampleTemplate {
   id: string;
   name: string;
@@ -8,641 +21,457 @@ export interface SampleTemplate {
   leads: UniversalLead[];
 }
 
-// ─── Helper types & utilities ────────────────────────────────
+// ─── 1. Generic Business ─────────────────────────────────────
 
-interface StageConfig {
-  name: string;
-  probabilityRange: [number, number];
-  statusOverride?: 'won' | 'lost';
-}
-
-interface TemplateConfig {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  stages: StageConfig[];
-  owners: string[];
-  ownerTeam: string;
-  locations: string[];
-  requirements: string[];
-  sources: LeadSource[];
-  valueRange: [number, number];
-  nextActions: string[];
-  clientNames: string[];
-  emailDomain: string;
-  phonePrefix: string;
-}
-
-function inferStatus(stage: string, daysInStage: number, stageConfigs: StageConfig[]): string {
-  const cfg = stageConfigs.find(s => s.name === stage);
-  if (cfg?.statusOverride === 'won') return 'won';
-  if (cfg?.statusOverride === 'lost') return 'lost';
-  if (daysInStage >= 7) return 'stuck';
-  return 'active';
-}
-
-function pickProbability(stage: string, stageConfigs: StageConfig[]): number {
-  const cfg = stageConfigs.find(s => s.name === stage);
-  if (!cfg) return 30;
-  const [min, max] = cfg.probabilityRange;
-  return min + Math.floor(seededRandom() * (max - min + 1));
-}
-
-let _seed = 42;
-function seededRandom(): number {
-  _seed = (_seed * 16807 + 0) % 2147483647;
-  return (_seed - 1) / 2147483646;
-}
-
-function resetSeed(val: number) {
-  _seed = val;
-}
-
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(seededRandom() * arr.length)];
-}
-
-function pickIndex(max: number): number {
-  return Math.floor(seededRandom() * max);
-}
-
-function generateDate(daysAgo: number): string {
-  const d = new Date('2026-06-19');
-  d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().slice(0, 10);
-}
-
-function generatePhone(prefix: string): string {
-  const n1 = String(10000 + pickIndex(89999));
-  const n2 = String(10000 + pickIndex(89999));
-  return `${prefix}${n1}-${n2}`;
-}
-
-function generateEmail(name: string, domain: string): string {
-  const clean = name.toLowerCase().replace(/[^a-z ]/g, '').split(' ');
-  if (clean.length >= 2) {
-    return `${clean[0]}.${clean[1]}@${domain}`;
-  }
-  return `${clean[0]}${pickIndex(99)}@${domain}`;
-}
-
-function generateLeads(config: TemplateConfig, count: number): UniversalLead[] {
-  resetSeed(config.id.length * 1000 + 42);
-  const leads: UniversalLead[] = [];
-
-  const activeStages = config.stages.filter(s => !s.statusOverride);
-  const wonStages = config.stages.filter(s => s.statusOverride === 'won');
-  const lostStages = config.stages.filter(s => s.statusOverride === 'lost');
-
-  // Pre-assign stage types to ensure good distribution:
-  // ~60% active stages, ~20% won, ~12% lost, ~8% stuck-guaranteed
-  const stageSlots: Array<'active' | 'won' | 'lost'> = [];
-  for (let i = 0; i < count; i++) {
-    if (i < Math.floor(count * 0.20)) stageSlots.push('won');
-    else if (i < Math.floor(count * 0.32)) stageSlots.push('lost');
-    else stageSlots.push('active');
-  }
-  // Shuffle slots using seeded random
-  for (let i = stageSlots.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom() * (i + 1));
-    [stageSlots[i], stageSlots[j]] = [stageSlots[j], stageSlots[i]];
-  }
-
-  for (let i = 0; i < count; i++) {
-    const slotType = stageSlots[i];
-    let stage: StageConfig;
-    if (slotType === 'lost' && lostStages.length > 0) {
-      stage = pick(lostStages);
-    } else if (slotType === 'won' && wonStages.length > 0) {
-      stage = pick(wonStages);
-    } else {
-      stage = pick(activeStages);
-    }
-
-    const clientName = config.clientNames[i % config.clientNames.length];
-    // For active leads: ~40% should be stuck (daysInStage >= 7)
-    const isStuckCandidate = !stage.statusOverride && seededRandom() < 0.35;
-    const daysInStage = stage.statusOverride === 'won' ? 0
-      : stage.statusOverride === 'lost' ? pickIndex(10)
-      : isStuckCandidate ? 7 + pickIndex(8)
-      : pickIndex(6);
-    const daysSinceUpdate = Math.max(0, daysInStage - pickIndex(3));
-    const isUnassigned = seededRandom() < 0.1;
-    const owner = isUnassigned ? 'Unassigned' : pick(config.owners);
-    const value = config.valueRange[0] + Math.floor(seededRandom() * (config.valueRange[1] - config.valueRange[0]));
-    const createdDaysAgo = daysInStage + pickIndex(20) + 1;
-
-    leads.push({
-      id: `${config.id}-${String(i + 1).padStart(3, '0')}`,
-      client: clientName,
-      phone: generatePhone(config.phonePrefix),
-      email: generateEmail(clientName, config.emailDomain),
-      source: pick(config.sources),
-      location: pick(config.locations),
-      requirement: pick(config.requirements),
-      stage: stage.name,
-      status: inferStatus(stage.name, daysInStage, config.stages),
-      ownerTeam: isUnassigned ? 'Unassigned' : config.ownerTeam,
-      owner,
-      createdAt: generateDate(createdDaysAgo),
-      lastContacted: generateDate(daysSinceUpdate),
-      daysInStage,
-      daysSinceUpdate,
-      value,
-      probability: pickProbability(stage.name, config.stages),
-      nextAction: pick(config.nextActions),
-    });
-
-
-  }
-
-  return leads;
-}
-
-// ─── Name pools ──────────────────────────────────────────────
-
-const INDIAN_NAMES = [
-  'Priya Sharma', 'Rajiv Mehta', 'Deepa Iyer', 'Suresh Kumar', 'Anjali Singh',
-  'Vikram Nair', 'Meena Patel', 'Aryan Gupta', 'Kavya Reddy', 'Rahul Krishnan',
-  'Sonal Joshi', 'Nikhil Desai', 'Pooja Menon', 'Rohit Verma', 'Shilpa Rao',
-  'Aditya Kumar', 'Preethi Nair', 'Manish Shah', 'Divya Pillai', 'Karan Malhotra',
-  'Sneha Iyer', 'Varun Shetty', 'Lakshmi Prasad', 'Nitin Sharma', 'Amrita Kapoor',
-  'Girish Rao', 'Tanvi Joshi', 'Sanjay Mehta', 'Ritu Aggarwal', 'Harsha Pillai',
-  'Ananya Bhat', 'Vivek Sundaram', 'Rekha Nambiar', 'Prakash Hegde', 'Swati Kulkarni',
-];
-
-const MIXED_NAMES = [
-  'Priya Sharma', 'James Wilson', 'Deepa Iyer', 'Michael Chen', 'Anjali Singh',
-  'Sarah Johnson', 'Meena Patel', 'David Kim', 'Kavya Reddy', 'Robert Taylor',
-  'Sonal Joshi', 'Emily Davis', 'Pooja Menon', 'Chris Anderson', 'Shilpa Rao',
-  'Laura Martinez', 'Preethi Nair', 'Daniel Brown', 'Divya Pillai', 'Karen White',
-  'Sneha Iyer', 'Tom Harris', 'Lakshmi Prasad', 'Jessica Lee', 'Amrita Kapoor',
-  'Mark Thompson', 'Tanvi Joshi', 'Rachel Green', 'Ritu Aggarwal', 'Alex Morgan',
-  'Ananya Bhat', 'Brian Clark', 'Rekha Nambiar', 'Sophie Turner', 'Vivek Sundaram',
-];
-
-const SAAS_NAMES = [
-  'TechFlow Inc', 'DataBridge Solutions', 'CloudSync Labs', 'PixelWave Studio',
-  'GreenLeaf Analytics', 'NovaSpark AI', 'SwiftPay Systems', 'MetricHub Corp',
-  'BlueRidge Software', 'QuantumEdge Tech', 'VeloCity Apps', 'PrimeStack IO',
-  'Zenith Digital', 'ApexCloud Services', 'CodeNest Solutions', 'BrightPath SaaS',
-  'IronGate Security', 'NimbusWorks', 'FusionTech Labs', 'ClearView Analytics',
-  'StarGrid Computing', 'PulsePoint Data', 'AgileCraft Tools', 'DeepSight AI',
-  'TrueNorth Systems', 'FlowState Tech', 'BridgePoint SaaS', 'VertexLabs',
-  'HorizonScale', 'OmniStack Corp', 'CrestWave Digital', 'PeakLogic Software',
-  'AtlasForge', 'RapidBase IO', 'CoreSignal Tech',
-];
-
-const AGENCY_NAMES = [
-  'Priya Sharma', 'James Wilson', 'Nidhi Kapoor', 'Michael Chen', 'Rakesh Gupta',
-  'Sarah Johnson', 'Arjun Menon', 'David Kim', 'Meera Sinha', 'Robert Taylor',
-  'Sunita Reddy', 'Emily Davis', 'Vikash Yadav', 'Chris Anderson', 'Poornima Rao',
-  'Laura Martinez', 'Harsh Vardhan', 'Daniel Brown', 'Ranjini Nair', 'Karen White',
-  'Siddharth Patel', 'Tom Harris', 'Gayatri Iyer', 'Jessica Lee', 'Anand Kulkarni',
-  'Mark Thompson', 'Bhavana Desai', 'Rachel Green', 'Tarun Bhatia', 'Alex Morgan',
-  'Neha Agarwal', 'Brian Clark', 'Mahesh Hegde', 'Sophie Turner', 'Aisha Khan',
-];
-
-const HEALTHCARE_NAMES = [
-  'Ramesh Gupta', 'Fatima Sheikh', 'Sunil Patel', 'Ayesha Khan', 'Vinod Sharma',
-  'Nasreen Begum', 'Prakash Rao', 'Zainab Ali', 'Gopal Krishna', 'Saira Bano',
-  'Rajan Nair', 'Mumtaz Khatun', 'Manoj Singh', 'Haseena Banu', 'Vijay Kumar',
-  'Reshma Siddiqui', 'Ashok Pillai', 'Nusrat Jahan', 'Dinesh Verma', 'Shabnam Parveen',
-  'Kishore Reddy', 'Tabassum Ara', 'Naveen Hegde', 'Sakina Bibi', 'Rajendra Prasad',
-  'Amina Khatoon', 'Sudhir Menon', 'Farzana Sultana', 'Balaji Sundaram', 'Rukhsar Naaz',
-  'Harish Joshi', 'Samina Begum', 'Arun Kumar', 'Nafisa Sheikh', 'Mohan Das',
-];
-
-const REALESTATE_NAMES = [
-  'Rajesh Agarwal', 'Sunita Reddy', 'Mohan Kapoor', 'Lakshmi Devi', 'Vinay Singhania',
-  'Kamala Nair', 'Pramod Jain', 'Saroja Iyer', 'Ashish Mittal', 'Padma Rao',
-  'Dinesh Gupta', 'Revathi Menon', 'Sunil Bansal', 'Vasanthi Pillai', 'Naveen Goel',
-  'Sumathi Krishnan', 'Ravi Khandelwal', 'Meenakshi Sharma', 'Ajay Maheshwari', 'Geetha Nambiar',
-  'Pankaj Oswal', 'Janaki Sundaram', 'Sanjay Lodha', 'Bhavani Hegde', 'Manoj Sethia',
-  'Usha Rani', 'Deepak Birla', 'Saraswathi Bhat', 'Rahul Bajaj', 'Prema Kumari',
-  'Anil Goenka', 'Vijayalakshmi', 'Kiran Parekh', 'Nalini Desai', 'Suresh Jhunjhunwala',
-];
-
-const EDUCATION_NAMES = [
-  'Arjun Nair', 'Megha Srinivasan', 'Rohan Deshmukh', 'Ananya Krishnamurthy', 'Varun Bhat',
-  'Shreya Venkatesh', 'Aakash Patel', 'Isha Raghavan', 'Dev Sharma', 'Tanya Joshi',
-  'Karthik Subramanian', 'Nisha Iyer', 'Pranav Kulkarni', 'Aditi Menon', 'Sahil Gupta',
-  'Riya Nambiar', 'Arun Hegde', 'Divya Sundaram', 'Nihal Khan', 'Pooja Reddy',
-  'Siddharth Rao', 'Meghana Pillai', 'Harsh Agarwal', 'Kavita Nair', 'Rahul Bose',
-  'Swathi Krishna', 'Tarun Mehta', 'Anjali Prasad', 'Vishal Singh', 'Neha Sharma',
-  'Abhishek Iyer', 'Prerna Kaur', 'Akshay Verma', 'Simran Gill', 'Dhruv Malhotra',
-];
-
-const EVENTS_NAMES = [
-  'Priya Malhotra', 'Ravi Shankar', 'Neha Aggarwal', 'Vikram Khanna', 'Sunita Rao',
-  'Amit Bhasin', 'Kavya Nair', 'Manish Arora', 'Deepa Krishnan', 'Sanjay Puri',
-  'Asha Hegde', 'Rajat Kapoor', 'Meera Sundaram', 'Vijay Malya', 'Pooja Shetty',
-  'Karan Johar', 'Anita Desai', 'Sunil Gavaskar', 'Renu Pillai', 'Aakash Mehta',
-  'Jyoti Bhat', 'Prakash Sharma', 'Geeta Iyer', 'Naresh Goyal', 'Savita Kulkarni',
-  'Hemant Verma', 'Usha Nair', 'Rajendra Prasad', 'Lalita Menon', 'Ashwin Reddy',
-  'Bhavana Joshi', 'Tarun Singh', 'Padma Subramanian', 'Mohan Lal', 'Smita Patil',
-];
-
-const RETAIL_NAMES = [
-  'Ramesh Store', 'Patel Traders', 'Singh Electronics', 'Kumar Fashions', 'Sharma General Store',
-  'Gupta Hardware', 'Joshi Opticals', 'Iyer Silks', 'Nair Furniture', 'Reddy Supermart',
-  'Mehta Jewellers', 'Rao Pharmacy', 'Verma Sports', 'Kapoor Bakery', 'Desai Textiles',
-  'Bhat Stationery', 'Pillai Mobiles', 'Khan Perfumes', 'Hegde Organics', 'Sundaram Watches',
-  'Aggarwal Sweets', 'Krishnan Books', 'Malhotra Shoes', 'Menon Tea House', 'Shetty Hardware',
-  'Kulkarni Medical', 'Prasad Garments', 'Nambiar Auto Parts', 'Singhania Home Decor', 'Arora Gift Shop',
-  'Chandra Electronics', 'Mukherjee Sarees', 'Saxena Cosmetics', 'Bansal Dry Fruits', 'Tiwari Provisions',
-];
-
-const VIRALREELS_NAMES = [
-  'FreshBite Cafe', 'GlowUp Skincare', 'FitZone Gym', 'StyleHub Boutique', 'TravelMate Tours',
-  'HomeBrew Coffee', 'PetPals Store', 'ArtisanCraft Studio', 'QuickBite Delivery', 'EcoWear Fashion',
-  'UrbanNest Interiors', 'SpiceRoute Restaurant', 'BookNook Cafe', 'ZenYoga Studio', 'TechGadget Store',
-  'BloomBox Florist', 'StreetStyle Brand', 'FreshFarm Organics', 'SnapShot Photography', 'DanceVibe Academy',
-  'MealPrep Kitchen', 'GlamSquad Salon', 'PixelPerfect Design', 'SoulFood Bakery', 'WanderLust Travel',
-  'NeonNights Lounge', 'GreenThumb Garden', 'VintageVibes Store', 'PowerLift Gym', 'CraftBeer Pub',
-  'SmoothBlend Juices', 'UrbanArt Gallery', 'ChillZone Hookah', 'BoldBrew Roasters', 'FlexFit Athleisure',
-];
-
-// ─── Template configurations ────────────────────────────────
-
-const GENERIC_CONFIG: TemplateConfig = {
+const generic: SampleTemplate = {
   id: 'generic',
   name: 'Generic Business',
-  description: 'Mixed business leads across industries',
+  description: 'Mixed business leads across standard stages',
   icon: '🏢',
-  stages: [
-    { name: 'New Inquiry', probabilityRange: [5, 15] },
-    { name: 'First Contact', probabilityRange: [10, 25] },
-    { name: 'Qualified', probabilityRange: [25, 40] },
-    { name: 'Proposal Sent', probabilityRange: [35, 55] },
-    { name: 'Negotiation', probabilityRange: [50, 70] },
-    { name: 'Completed', probabilityRange: [100, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('g01', 'Amit Verma', 'WhatsApp', 'Mumbai', 'Business consulting', 'New Inquiry', 'Amit K.', '2026-06-18', 1, 12, 20, 'Send intro email'),
+    lead('g02', 'Sara Johnson', 'Website', 'Delhi', 'Product purchase', 'New Inquiry', 'Priya S.', '2026-06-17', 2, 8, 15, 'Call to qualify'),
+    lead('g03', 'Ravi Patel', 'Referral', 'Bangalore', 'Service inquiry', 'New Inquiry', 'Unassigned', '2026-06-16', 3, 15, 10, 'Assign owner'),
+    lead('g04', 'Nina Das', 'Email', 'Chennai', 'Annual maintenance contract', 'New Inquiry', 'Rahul M.', '2026-06-18', 1, 6, 15, 'Review requirements'),
+    lead('g05', 'John Carter', 'Google Ads', 'Hyderabad', 'Bulk order inquiry', 'New Inquiry', 'Amit K.', '2026-06-15', 4, 22, 10, 'Send catalog'),
+    lead('g06', 'Meera Nair', 'Phone Call', 'Pune', 'Business consulting', 'First Contact', 'Priya S.', '2026-06-17', 2, 18, 25, 'Schedule meeting'),
+    lead('g07', 'David Kim', 'Website', 'Mumbai', 'Service inquiry', 'First Contact', 'Rahul M.', '2026-06-14', 5, 10, 20, 'Send brochure'),
+    lead('g08', 'Anita Sharma', 'WhatsApp', 'Delhi', 'Product purchase', 'First Contact', 'Amit K.', '2026-06-10', 9, 25, 20, 'Follow up on brochure'),
+    lead('g09', 'Prakash Rao', 'Referral', 'Bangalore', 'Consulting retainer', 'First Contact', 'Unassigned', '2026-06-16', 3, 30, 25, 'Assign and schedule call'),
+    lead('g10', 'Lisa Wong', 'Email', 'Chennai', 'Software license', 'Qualified', 'Priya S.', '2026-06-17', 2, 45, 40, 'Prepare proposal'),
+    lead('g11', 'Sunil Joshi', 'WhatsApp', 'Hyderabad', 'Business consulting', 'Qualified', 'Rahul M.', '2026-06-15', 4, 20, 35, 'Send case studies'),
+    lead('g12', 'Maria Chen', 'Google Ads', 'Pune', 'Product purchase', 'Qualified', 'Amit K.', '2026-06-13', 6, 35, 40, 'Arrange product demo'),
+    lead('g13', 'Vivek Reddy', 'Referral', 'Mumbai', 'Annual maintenance contract', 'Qualified', 'Priya S.', '2026-06-08', 11, 28, 35, 'Revisit pricing'),
+    lead('g14', 'Emma Taylor', 'Website', 'Delhi', 'Service inquiry', 'Qualified', 'Unassigned', '2026-06-12', 7, 14, 30, 'Assign owner'),
+    lead('g15', 'Harish Kumar', 'Phone Call', 'Bangalore', 'Consulting retainer', 'Proposal Sent', 'Rahul M.', '2026-06-16', 3, 55, 55, 'Follow up on proposal'),
+    lead('g16', 'Priya Menon', 'WhatsApp', 'Chennai', 'Product purchase', 'Proposal Sent', 'Amit K.', '2026-06-14', 5, 40, 50, 'Address client questions'),
+    lead('g17', 'Tom Baker', 'Email', 'Hyderabad', 'Business consulting', 'Proposal Sent', 'Priya S.', '2026-06-09', 10, 60, 50, 'Revise scope'),
+    lead('g18', 'Geeta Pillai', 'Referral', 'Pune', 'Software license', 'Proposal Sent', 'Rahul M.', '2026-06-17', 2, 32, 55, 'Send revised terms'),
+    lead('g19', 'Rakesh Gupta', 'Google Ads', 'Mumbai', 'Bulk order inquiry', 'Negotiation', 'Amit K.', '2026-06-16', 3, 70, 65, 'Finalize discount'),
+    lead('g20', 'Sophie Brown', 'Website', 'Delhi', 'Business consulting', 'Negotiation', 'Priya S.', '2026-06-15', 4, 48, 60, 'Send final terms'),
+    lead('g21', 'Manoj Tiwari', 'Phone Call', 'Bangalore', 'Service inquiry', 'Negotiation', 'Rahul M.', '2026-06-11', 8, 38, 70, 'Close deal this week'),
+    lead('g22', 'Sunita Rao', 'WhatsApp', 'Chennai', 'Annual maintenance contract', 'Negotiation', 'Unassigned', '2026-06-13', 6, 22, 60, 'Assign for closing'),
+    lead('g23', 'Kiran Desai', 'Referral', 'Hyderabad', 'Consulting retainer', 'Completed', 'Amit K.', '2026-05-20', 2, 50, 100, 'Send thank-you note'),
+    lead('g24', 'James Lee', 'Website', 'Pune', 'Product purchase', 'Completed', 'Priya S.', '2026-05-15', 1, 35, 100, 'Request testimonial'),
+    lead('g25', 'Nandini Shah', 'Email', 'Mumbai', 'Business consulting', 'Completed', 'Rahul M.', '2026-05-25', 3, 80, 100, 'Upsell next quarter'),
+    lead('g26', 'Arun Mehta', 'WhatsApp', 'Delhi', 'Software license', 'Lost', 'Amit K.', '2026-06-01', 5, 28, 0, 'Archive — budget cut'),
+    lead('g27', 'Claire Davis', 'Google Ads', 'Bangalore', 'Service inquiry', 'Lost', 'Priya S.', '2026-05-28', 3, 15, 0, 'Archive — went with competitor'),
+    lead('g28', 'Dinesh Kapoor', 'Phone Call', 'Chennai', 'Product purchase', 'Lost', 'Rahul M.', '2026-06-05', 4, 42, 0, 'Re-engage next fiscal'),
+    lead('g29', 'Pooja Bhat', 'Referral', 'Hyderabad', 'Business consulting', 'New Inquiry', 'Priya S.', '2026-06-18', 1, 9, 10, 'Send welcome packet'),
+    lead('g30', 'Michael Scott', 'Website', 'Pune', 'Bulk order inquiry', 'First Contact', 'Amit K.', '2026-06-16', 3, 55, 25, 'Send product samples'),
+    lead('g31', 'Revathi Krishnan', 'WhatsApp', 'Mumbai', 'Service inquiry', 'Qualified', 'Rahul M.', '2026-06-11', 8, 17, 35, 'Revisit requirements'),
+    lead('g32', 'Tanmay Bose', 'Email', 'Delhi', 'Consulting retainer', 'Proposal Sent', 'Unassigned', '2026-06-07', 12, 65, 45, 'Assign and follow up'),
   ],
-  owners: ['Amit R.', 'Priya S.', 'Rajesh K.', 'Neha M.'],
-  ownerTeam: 'Sales Team',
-  locations: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad'],
-  requirements: [
-    'Annual service contract', 'Product bulk order', 'Custom solution needed',
-    'Consulting engagement', 'Partnership discussion', 'Vendor onboarding',
-    'Maintenance contract renewal', 'New project scoping', 'Training program',
-    'Support plan upgrade',
-  ],
-  sources: ['WhatsApp', 'Phone Call', 'Email', 'Website', 'Referral', 'LinkedIn', 'Google Ads'],
-  valueRange: [25000, 500000],
-  nextActions: [
-    'Send proposal', 'Follow up call', 'Schedule meeting', 'Send quotation',
-    'Share case study', 'Arrange demo', 'Negotiate terms', 'Close deal',
-  ],
-  clientNames: MIXED_NAMES,
-  emailDomain: 'business.com',
-  phonePrefix: '+91-',
 };
 
-const SAAS_CONFIG: TemplateConfig = {
+// ─── 2. SaaS ─────────────────────────────────────────────────
+
+const saas: SampleTemplate = {
   id: 'saas',
   name: 'SaaS',
-  description: 'Software and subscription leads',
+  description: 'Software and subscription business leads',
   icon: '💻',
-  stages: [
-    { name: 'New Inquiry', probabilityRange: [5, 15] },
-    { name: 'Demo Booked', probabilityRange: [15, 25] },
-    { name: 'Demo Completed', probabilityRange: [25, 40] },
-    { name: 'Trial Started', probabilityRange: [35, 50] },
-    { name: 'Proposal Sent', probabilityRange: [45, 60] },
-    { name: 'Negotiation', probabilityRange: [55, 75] },
-    { name: 'Closed Won', probabilityRange: [95, 100], statusOverride: 'won' },
-    { name: 'Closed Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('s01', 'TechVista Inc.', 'Website', 'San Francisco', 'Enterprise plan', 'New Inquiry', 'Alex R.', '2026-06-18', 1, 15, 10, 'Send pricing page'),
+    lead('s02', 'Cloudbridge Ltd.', 'LinkedIn', 'London', 'Team license — 50 seats', 'New Inquiry', 'Sarah K.', '2026-06-17', 2, 25, 10, 'Qualify requirements'),
+    lead('s03', 'DataPulse AI', 'Google Ads', 'Bangalore', 'API access', 'New Inquiry', 'Unassigned', '2026-06-16', 3, 8, 5, 'Assign SDR'),
+    lead('s04', 'NovaSoft', 'Email', 'Berlin', 'Enterprise plan', 'New Inquiry', 'Mike T.', '2026-06-18', 1, 20, 10, 'Send feature comparison'),
+    lead('s05', 'GreenLeaf SaaS', 'Referral', 'Mumbai', 'Team license — 20 seats', 'New Inquiry', 'Alex R.', '2026-06-15', 4, 10, 10, 'Schedule intro call'),
+    lead('s06', 'Finova Systems', 'Website', 'New York', 'Enterprise plan', 'Demo Booked', 'Sarah K.', '2026-06-17', 2, 35, 25, 'Confirm demo time'),
+    lead('s07', 'MediTrack', 'LinkedIn', 'Chennai', 'API access — high volume', 'Demo Booked', 'Mike T.', '2026-06-16', 3, 18, 25, 'Prepare custom demo'),
+    lead('s08', 'RetailEdge', 'Google Ads', 'Delhi', 'Team license — 100 seats', 'Demo Booked', 'Alex R.', '2026-06-14', 5, 50, 25, 'Send agenda'),
+    lead('s09', 'Analytiq Corp.', 'Email', 'Singapore', 'Enterprise plan', 'Demo Completed', 'Sarah K.', '2026-06-16', 3, 30, 40, 'Send trial access'),
+    lead('s10', 'BuilderHub', 'Website', 'Pune', 'Team license — 30 seats', 'Demo Completed', 'Mike T.', '2026-06-13', 6, 15, 35, 'Follow up on demo feedback'),
+    lead('s11', 'PixelForge', 'Referral', 'Austin', 'API access', 'Demo Completed', 'Alex R.', '2026-06-10', 9, 12, 35, 'Check trial interest'),
+    lead('s12', 'ScaleUp Labs', 'LinkedIn', 'Hyderabad', 'Enterprise plan', 'Trial Started', 'Sarah K.', '2026-06-15', 4, 40, 50, 'Monitor usage metrics'),
+    lead('s13', 'Zenith AI', 'Website', 'Toronto', 'Team license — 75 seats', 'Trial Started', 'Unassigned', '2026-06-12', 7, 38, 45, 'Assign AE'),
+    lead('s14', 'FlowState', 'Google Ads', 'Mumbai', 'API access', 'Trial Started', 'Mike T.', '2026-06-14', 5, 22, 50, 'Schedule check-in call'),
+    lead('s15', 'Orion Tech', 'Email', 'Bangalore', 'Enterprise plan', 'Proposal Sent', 'Alex R.', '2026-06-16', 3, 45, 60, 'Address security questions'),
+    lead('s16', 'NexGen Solutions', 'LinkedIn', 'London', 'Team license — 200 seats', 'Proposal Sent', 'Sarah K.', '2026-06-11', 8, 50, 55, 'Revise pricing tiers'),
+    lead('s17', 'DataStream Co.', 'Referral', 'Delhi', 'Enterprise plan', 'Proposal Sent', 'Mike T.', '2026-06-15', 4, 28, 60, 'Follow up with CTO'),
+    lead('s18', 'AgilePath', 'Website', 'San Francisco', 'API access — enterprise', 'Negotiation', 'Alex R.', '2026-06-17', 2, 35, 70, 'Finalize contract terms'),
+    lead('s19', 'ClearView Analytics', 'LinkedIn', 'Singapore', 'Enterprise plan', 'Negotiation', 'Sarah K.', '2026-06-14', 5, 42, 65, 'Send final proposal'),
+    lead('s20', 'MindBridge', 'Google Ads', 'Chennai', 'Team license — 50 seats', 'Negotiation', 'Unassigned', '2026-06-09', 10, 25, 60, 'Assign closer'),
+    lead('s21', 'PrimeSoft', 'Email', 'Hyderabad', 'Enterprise plan', 'Negotiation', 'Mike T.', '2026-06-16', 3, 48, 70, 'Discount approval pending'),
+    lead('s22', 'Lumos Data', 'Referral', 'New York', 'Enterprise plan', 'Closed Won', 'Alex R.', '2026-05-20', 1, 40, 100, 'Begin onboarding'),
+    lead('s23', 'BrightPath Inc.', 'Website', 'Mumbai', 'Team license — 100 seats', 'Closed Won', 'Sarah K.', '2026-05-25', 2, 50, 100, 'Assign CSM'),
+    lead('s24', 'TrueNorth SaaS', 'LinkedIn', 'Bangalore', 'API access', 'Closed Won', 'Mike T.', '2026-05-30', 1, 18, 100, 'Send welcome kit'),
+    lead('s25', 'Vertex Labs', 'Google Ads', 'Delhi', 'Enterprise plan', 'Closed Lost', 'Alex R.', '2026-06-02', 4, 35, 0, 'Archive — chose competitor'),
+    lead('s26', 'QuickByte', 'Email', 'Pune', 'Team license — 10 seats', 'Closed Lost', 'Sarah K.', '2026-06-05', 3, 5, 0, 'Archive — budget freeze'),
+    lead('s27', 'Stratify AI', 'Website', 'London', 'API access', 'Closed Lost', 'Unassigned', '2026-05-28', 5, 12, 0, 'Lost — no response'),
+    lead('s28', 'CloudNine Corp.', 'LinkedIn', 'Toronto', 'Enterprise plan', 'New Inquiry', 'Mike T.', '2026-06-18', 1, 30, 10, 'Send intro deck'),
+    lead('s29', 'RapidScale', 'Referral', 'Austin', 'Team license — 40 seats', 'Demo Booked', 'Alex R.', '2026-06-17', 2, 20, 25, 'Prepare demo environment'),
+    lead('s30', 'InnoWave', 'Website', 'Hyderabad', 'API access — startup plan', 'Trial Started', 'Sarah K.', '2026-06-13', 6, 5, 45, 'Send onboarding guide'),
+    lead('s31', 'SynapseIO', 'Google Ads', 'Singapore', 'Enterprise plan', 'Proposal Sent', 'Mike T.', '2026-06-08', 11, 38, 55, 'Re-send proposal'),
+    lead('s32', 'CoreLogic Ltd.', 'LinkedIn', 'Mumbai', 'Team license — 150 seats', 'Negotiation', 'Alex R.', '2026-06-12', 7, 45, 65, 'Expedite legal review'),
+    lead('s33', 'Atlas Digital', 'Email', 'Berlin', 'Enterprise plan', 'Demo Completed', 'Sarah K.', '2026-06-15', 4, 32, 40, 'Share ROI calculator'),
+    lead('s34', 'VeloTech', 'Referral', 'Chennai', 'Team license — 25 seats', 'New Inquiry', 'Unassigned', '2026-06-14', 5, 12, 5, 'Assign and qualify'),
+    lead('s35', 'Propel Systems', 'Website', 'Bangalore', 'API access', 'First Contact', 'Mike T.', '2026-06-17', 2, 8, 15, 'Send technical docs'),
   ],
-  owners: ['Anika D.', 'Rohan P.', 'Sita V.', 'Dev K.'],
-  ownerTeam: 'SaaS Sales',
-  locations: ['San Francisco', 'New York', 'London', 'Bangalore', 'Singapore', 'Berlin', 'Sydney', 'Toronto'],
-  requirements: [
-    'Enterprise plan - 500 seats', 'Startup plan - 20 seats', 'API integration needed',
-    'Custom SSO setup', 'Data migration from competitor', 'Team plan upgrade',
-    'Annual enterprise license', 'Platform evaluation', 'Multi-region deployment',
-    'White-label solution',
-  ],
-  sources: ['Website', 'LinkedIn', 'Google Ads', 'Email', 'Referral', 'Campaign'],
-  valueRange: [5000, 120000],
-  nextActions: [
-    'Schedule demo', 'Send trial credentials', 'Share pricing deck', 'Follow up on trial',
-    'Arrange technical call', 'Send contract', 'Negotiate enterprise terms', 'Onboard team',
-  ],
-  clientNames: SAAS_NAMES,
-  emailDomain: 'company.io',
-  phonePrefix: '+1-',
 };
 
-const AGENCY_CONFIG: TemplateConfig = {
+// ─── 3. Agency / Consulting ──────────────────────────────────
+
+const agency: SampleTemplate = {
   id: 'agency',
   name: 'Agency / Consulting',
   description: 'Consulting and agency project leads',
-  icon: '📊',
-  stages: [
-    { name: 'New Inquiry', probabilityRange: [5, 15] },
-    { name: 'First Contact', probabilityRange: [10, 20] },
-    { name: 'Qualified', probabilityRange: [20, 35] },
-    { name: 'Proposal Sent', probabilityRange: [35, 50] },
-    { name: 'Quotation Sent', probabilityRange: [40, 55] },
-    { name: 'Negotiation', probabilityRange: [50, 70] },
-    { name: 'Execution', probabilityRange: [85, 95] },
-    { name: 'Completed', probabilityRange: [100, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  icon: '📋',
+  leads: [
+    lead('a01', 'FreshBrew Co.', 'LinkedIn', 'Mumbai', 'Brand strategy', 'New Inquiry', 'Deepak V.', '2026-06-18', 1, 15, 10, 'Send capabilities deck'),
+    lead('a02', 'UrbanNest Homes', 'Referral', 'Delhi', 'Content marketing', 'New Inquiry', 'Sneha R.', '2026-06-17', 2, 12, 10, 'Schedule discovery call'),
+    lead('a03', 'TechStar Labs', 'Website', 'Bangalore', 'SEO campaign', 'New Inquiry', 'Unassigned', '2026-06-16', 3, 8, 5, 'Assign account lead'),
+    lead('a04', 'Luxe Interiors', 'Email', 'Chennai', 'Brand strategy', 'New Inquiry', 'Karan P.', '2026-06-18', 1, 20, 10, 'Send case studies'),
+    lead('a05', 'GreenVista Organic', 'LinkedIn', 'Pune', 'Social media management', 'New Inquiry', 'Deepak V.', '2026-06-15', 4, 6, 10, 'Qualify budget'),
+    lead('a06', 'Meridian Finance', 'Referral', 'Hyderabad', 'SEO campaign', 'First Contact', 'Sneha R.', '2026-06-17', 2, 18, 25, 'Send audit report'),
+    lead('a07', 'CloudKitchen Hub', 'Website', 'Mumbai', 'Content marketing', 'First Contact', 'Karan P.', '2026-06-14', 5, 10, 20, 'Share content samples'),
+    lead('a08', 'Prestige Auto', 'LinkedIn', 'Delhi', 'Brand strategy', 'First Contact', 'Deepak V.', '2026-06-10', 9, 35, 20, 'Reconnect — stalled'),
+    lead('a09', 'Artisan Bakery', 'Email', 'Bangalore', 'Social media management', 'First Contact', 'Unassigned', '2026-06-13', 6, 5, 15, 'Assign team member'),
+    lead('a10', 'NovaTech Solutions', 'Referral', 'Chennai', 'SEO campaign', 'Qualified', 'Sneha R.', '2026-06-16', 3, 22, 40, 'Prepare SEO proposal'),
+    lead('a11', 'Skyline Realty', 'LinkedIn', 'Pune', 'Brand strategy', 'Qualified', 'Karan P.', '2026-06-15', 4, 45, 35, 'Schedule strategy session'),
+    lead('a12', 'PurePlay Sports', 'Website', 'Hyderabad', 'Content marketing', 'Qualified', 'Deepak V.', '2026-06-11', 8, 14, 30, 'Revisit scope'),
+    lead('a13', 'Bloom Wellness', 'Email', 'Mumbai', 'Social media management', 'Qualified', 'Sneha R.', '2026-06-17', 2, 9, 35, 'Finalize content plan'),
+    lead('a14', 'CityScape Builders', 'Referral', 'Delhi', 'Brand strategy', 'Proposal Sent', 'Karan P.', '2026-06-16', 3, 60, 55, 'Follow up on proposal'),
+    lead('a15', 'HealthFirst Pharma', 'LinkedIn', 'Bangalore', 'SEO campaign', 'Proposal Sent', 'Deepak V.', '2026-06-14', 5, 30, 50, 'Address compliance questions'),
+    lead('a16', 'TrendSetters Fashion', 'Website', 'Chennai', 'Content marketing', 'Proposal Sent', 'Sneha R.', '2026-06-08', 11, 25, 45, 'Re-send revised proposal'),
+    lead('a17', 'SparkDigital', 'Email', 'Pune', 'Social media management', 'Quotation Sent', 'Unassigned', '2026-06-15', 4, 18, 50, 'Assign for follow-up'),
+    lead('a18', 'Vertex Holdings', 'Referral', 'Hyderabad', 'Brand strategy', 'Quotation Sent', 'Karan P.', '2026-06-12', 7, 80, 55, 'Negotiate terms'),
+    lead('a19', 'EcoHome Solutions', 'LinkedIn', 'Mumbai', 'SEO campaign', 'Quotation Sent', 'Deepak V.', '2026-06-16', 3, 16, 50, 'Clarify deliverables'),
+    lead('a20', 'BluePeak Travel', 'Website', 'Delhi', 'Content marketing', 'Negotiation', 'Sneha R.', '2026-06-17', 2, 28, 65, 'Finalize retainer terms'),
+    lead('a21', 'RoyalCraft Jewelry', 'Referral', 'Bangalore', 'Brand strategy', 'Negotiation', 'Karan P.', '2026-06-13', 6, 50, 70, 'Send final agreement'),
+    lead('a22', 'Metro Logistics', 'LinkedIn', 'Chennai', 'SEO campaign', 'Negotiation', 'Deepak V.', '2026-06-09', 10, 35, 60, 'Push for decision'),
+    lead('a23', 'FreshFields Agri', 'Email', 'Pune', 'Content marketing', 'Execution', 'Sneha R.', '2026-06-05', 2, 20, 80, 'Month 1 deliverables'),
+    lead('a24', 'Zenith Media', 'Referral', 'Hyderabad', 'Brand strategy', 'Execution', 'Karan P.', '2026-05-28', 3, 70, 80, 'Mid-project review'),
+    lead('a25', 'WavePoint Digital', 'LinkedIn', 'Mumbai', 'Social media management', 'Completed', 'Deepak V.', '2026-05-15', 1, 15, 100, 'Request case study'),
+    lead('a26', 'Summit Consulting', 'Website', 'Delhi', 'Brand strategy', 'Completed', 'Sneha R.', '2026-05-20', 2, 120, 100, 'Upsell Phase 2'),
+    lead('a27', 'CoreBrand Studio', 'Referral', 'Bangalore', 'SEO campaign', 'Completed', 'Karan P.', '2026-05-25', 1, 24, 100, 'Send final report'),
+    lead('a28', 'DawnTech Inc.', 'Email', 'Chennai', 'Content marketing', 'Lost', 'Unassigned', '2026-06-01', 4, 30, 0, 'Archive — went in-house'),
+    lead('a29', 'PrimeRetail Group', 'LinkedIn', 'Pune', 'Brand strategy', 'Lost', 'Deepak V.', '2026-05-28', 6, 55, 0, 'Archive — budget cut'),
+    lead('a30', 'NexaWave Media', 'Referral', 'Hyderabad', 'Social media management', 'Lost', 'Sneha R.', '2026-06-04', 3, 10, 0, 'Archive — chose competitor'),
+    lead('a31', 'AuraDesign Co.', 'Website', 'Mumbai', 'Brand strategy', 'New Inquiry', 'Unassigned', '2026-06-18', 1, 40, 10, 'Assign senior lead'),
+    lead('a32', 'CloudBurst Media', 'LinkedIn', 'Delhi', 'SEO campaign', 'Qualified', 'Karan P.', '2026-06-10', 9, 28, 30, 'Revisit scope and budget'),
   ],
-  owners: ['Vikram S.', 'Nidhi K.', 'Arun M.', 'Shalini R.'],
-  ownerTeam: 'Consulting',
-  locations: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Gurgaon', 'Noida'],
-  requirements: [
-    'Brand strategy overhaul', 'Digital marketing retainer', 'Website redesign project',
-    'Social media management', 'SEO and content strategy', 'PR and communications',
-    'Market research study', 'UX audit and redesign', 'Performance marketing setup',
-    'Employer branding project',
-  ],
-  sources: ['Referral', 'LinkedIn', 'Email', 'Website', 'Phone Call', 'Instagram'],
-  valueRange: [100000, 1500000],
-  nextActions: [
-    'Send proposal', 'Present strategy deck', 'Share case studies', 'Negotiate scope',
-    'Schedule kickoff', 'Send revised quote', 'Follow up with decision maker', 'Arrange workshop',
-  ],
-  clientNames: AGENCY_NAMES,
-  emailDomain: 'agency-client.com',
-  phonePrefix: '+91-',
 };
 
-const INTERIOR_CONFIG: TemplateConfig = {
+// ─── 4. Interior / Architecture ──────────────────────────────
+
+const interior: SampleTemplate = {
   id: 'interior',
   name: 'Interior / Architecture',
-  description: 'Interior design and architecture project leads',
+  description: 'Interior design and architecture leads',
   icon: '🏠',
-  stages: [
-    { name: 'New Inquiry', probabilityRange: [5, 15] },
-    { name: 'First Contact', probabilityRange: [10, 20] },
-    { name: 'Qualified', probabilityRange: [20, 35] },
-    { name: 'Consultation', probabilityRange: [30, 45] },
-    { name: 'Site Visit', probabilityRange: [40, 55] },
-    { name: 'Proposal Sent', probabilityRange: [45, 60] },
-    { name: 'Quotation Sent', probabilityRange: [50, 65] },
-    { name: 'Negotiation', probabilityRange: [55, 75] },
-    { name: 'Advance Received', probabilityRange: [85, 95] },
-    { name: 'Execution', probabilityRange: [90, 98] },
-    { name: 'Completed', probabilityRange: [100, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('i01', 'Priya Sharma', 'WhatsApp', 'Bangalore', '3BHK Full Interior', 'New Inquiry', 'Kavitha R.', '2026-06-18', 1, 15, 10, 'Send portfolio'),
+    lead('i02', 'Rahul Mehta', 'Instagram', 'Mumbai', 'Villa Interior', 'New Inquiry', 'Pradeep S.', '2026-06-17', 2, 45, 10, 'Schedule call'),
+    lead('i03', 'Deepa Iyer', 'Referral', 'Chennai', 'Office Fitout 2000sqft', 'New Inquiry', 'Unassigned', '2026-06-16', 3, 25, 5, 'Assign designer'),
+    lead('i04', 'Karthik Nair', 'Website', 'Hyderabad', '2BHK Compact Interior', 'New Inquiry', 'Ananya M.', '2026-06-18', 1, 8, 10, 'Send pricing guide'),
+    lead('i05', 'Suresh Kumar', 'Phone Call', 'Pune', '4BHK Premium Interior', 'New Inquiry', 'Sriram V.', '2026-06-15', 4, 35, 10, 'Qualify budget range'),
+    lead('i06', 'Anjali Singh', 'WhatsApp', 'Delhi', '3BHK Full Interior', 'First Contact', 'Kavitha R.', '2026-06-17', 2, 18, 20, 'Share moodboard'),
+    lead('i07', 'Vikram Reddy', 'Instagram', 'Bangalore', 'Penthouse Design', 'First Contact', 'Pradeep S.', '2026-06-14', 5, 80, 20, 'Send luxury portfolio'),
+    lead('i08', 'Meena Patel', 'Walk-in', 'Mumbai', 'Kitchen + Dining Renovation', 'First Contact', 'Ananya M.', '2026-06-10', 9, 6, 15, 'Follow up — went silent'),
+    lead('i09', 'Aryan Gupta', 'Referral', 'Chennai', 'Studio Apartment', 'Qualified', 'Sriram V.', '2026-06-16', 3, 5, 35, 'Prepare design concept'),
+    lead('i10', 'Kavya Pillai', 'WhatsApp', 'Hyderabad', 'Villa Interior', 'Qualified', 'Kavitha R.', '2026-06-15', 4, 55, 35, 'Arrange site visit'),
+    lead('i11', 'Rohit Verma', 'Instagram', 'Pune', 'Office Fitout 5000sqft', 'Qualified', 'Unassigned', '2026-06-11', 8, 40, 30, 'Assign and visit site'),
+    lead('i12', 'Shilpa Rao', 'Website', 'Delhi', 'Duplex Full Interior', 'Consultation', 'Pradeep S.', '2026-06-17', 2, 30, 40, 'Prepare 3D walkthrough'),
+    lead('i13', 'Aditya Kumar', 'Phone Call', 'Bangalore', '2BHK New Build', 'Consultation', 'Ananya M.', '2026-06-14', 5, 10, 40, 'Share material options'),
+    lead('i14', 'Preethi Nair', 'WhatsApp', 'Mumbai', 'Cafe Interior + Signage', 'Consultation', 'Sriram V.', '2026-06-08', 11, 16, 35, 'Revisit timeline'),
+    lead('i15', 'Manish Shah', 'Referral', 'Chennai', '4BHK Premium Interior', 'Site Visit', 'Kavitha R.', '2026-06-16', 3, 32, 45, 'Conduct site measurement'),
+    lead('i16', 'Divya Menon', 'Walk-in', 'Hyderabad', '3BHK Full Interior', 'Site Visit', 'Pradeep S.', '2026-06-15', 4, 20, 45, 'Share site visit notes'),
+    lead('i17', 'Nitin Sharma', 'Instagram', 'Pune', 'Restaurant Interior 2000sqft', 'Proposal Sent', 'Ananya M.', '2026-06-17', 2, 18, 55, 'Follow up on proposal'),
+    lead('i18', 'Tanvi Joshi', 'WhatsApp', 'Delhi', 'Kids Room + Play Area', 'Proposal Sent', 'Sriram V.', '2026-06-13', 6, 5, 50, 'Address material queries'),
+    lead('i19', 'Sanjay Mehta', 'Referral', 'Bangalore', 'Builder Project — 10 units', 'Quotation Sent', 'Kavitha R.', '2026-06-16', 3, 150, 60, 'Negotiate bulk pricing'),
+    lead('i20', 'Ritu Aggarwal', 'Website', 'Mumbai', '3BHK Luxury Finishes', 'Quotation Sent', 'Pradeep S.', '2026-06-12', 7, 38, 55, 'Revise quotation'),
+    lead('i21', 'Harsha Pillai', 'Phone Call', 'Chennai', 'Home + Terrace Landscaping', 'Negotiation', 'Unassigned', '2026-06-14', 5, 30, 65, 'Assign for closing'),
+    lead('i22', 'Girish Rao', 'Referral', 'Hyderabad', 'IT Office Expansion', 'Negotiation', 'Ananya M.', '2026-06-09', 10, 22, 60, 'Push for sign-off'),
+    lead('i23', 'Lakshmi Prasad', 'WhatsApp', 'Pune', 'Pooja Room + Living', 'Negotiation', 'Sriram V.', '2026-06-16', 3, 5, 65, 'Finalize Vastu changes'),
+    lead('i24', 'Varun Shetty', 'Instagram', 'Delhi', 'Model Flat — Developer', 'Advance Received', 'Kavitha R.', '2026-06-10', 2, 45, 85, 'Start material procurement'),
+    lead('i25', 'Nandini Shah', 'Referral', 'Bangalore', 'Villa Full Interior', 'Advance Received', 'Pradeep S.', '2026-06-05', 3, 80, 90, 'Begin execution phase'),
+    lead('i26', 'Amrita Kapoor', 'Walk-in', 'Mumbai', 'Heritage Flat Renovation', 'Execution', 'Ananya M.', '2026-05-25', 2, 7, 85, 'Week 3 site check'),
+    lead('i27', 'Rajiv Menon', 'WhatsApp', 'Chennai', '4BHK Full Interior', 'Execution', 'Sriram V.', '2026-05-20', 4, 28, 90, 'Carpentry phase review'),
+    lead('i28', 'Sneha Iyer', 'Phone Call', 'Hyderabad', 'Home Office + Study', 'Completed', 'Kavitha R.', '2026-05-10', 1, 5, 100, 'Request testimonial'),
+    lead('i29', 'Vikram Nair', 'Referral', 'Pune', 'Villa + Landscaping', 'Completed', 'Pradeep S.', '2026-05-05', 2, 80, 100, 'Send thank-you note'),
+    lead('i30', 'Pooja Menon', 'Instagram', 'Delhi', '3BHK Full Interior', 'Lost', 'Ananya M.', '2026-06-01', 5, 14, 0, 'Archive — went with competitor'),
+    lead('i31', 'Karan Malhotra', 'Website', 'Bangalore', 'Corporate HQ Redesign', 'Lost', 'Unassigned', '2026-05-28', 4, 75, 0, 'Archive — budget cut'),
+    lead('i32', 'Sonal Joshi', 'WhatsApp', 'Mumbai', 'Retail Store Fitout', 'Lost', 'Sriram V.', '2026-06-03', 3, 12, 0, 'Archive — project shelved'),
+    lead('i33', 'Anand Krishnan', 'Referral', 'Chennai', 'Farmhouse Interior', 'New Inquiry', 'Kavitha R.', '2026-06-18', 1, 60, 10, 'Send luxury portfolio'),
+    lead('i34', 'Revathi Bose', 'Instagram', 'Hyderabad', '2BHK Budget Interior', 'First Contact', 'Pradeep S.', '2026-06-17', 2, 5, 20, 'Send starter packages'),
+    lead('i35', 'Gopal Reddy', 'Phone Call', 'Pune', 'Office Fitout 3000sqft', 'Qualified', 'Ananya M.', '2026-06-13', 6, 28, 35, 'Prepare concept presentation'),
   ],
-  owners: ['Neha A.', 'Arjun D.', 'Ravi P.', 'Meera S.'],
-  ownerTeam: 'Design Team',
-  locations: ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Chennai', 'Pune', 'Kochi', 'Goa'],
-  requirements: [
-    'Full home interior 3BHK', 'Office fit-out 4000 sqft', 'Living room + master bedroom',
-    'Commercial showroom design', 'Villa interior + landscaping', 'Kitchen + dining renovation',
-    'Studio apartment 500 sqft', 'Corporate office 2500 sqft', 'Cafe interior + signage',
-    'Duplex full home design', 'Restaurant interior 2000 sqft', 'Penthouse luxury design',
-  ],
-  sources: ['WhatsApp', 'Instagram', 'Referral', 'Website', 'Phone Call', 'Walk-in'],
-  valueRange: [200000, 5000000],
-  nextActions: [
-    'Schedule site visit', 'Send moodboard', 'Prepare 3D walkthrough', 'Share quotation',
-    'Follow up on proposal', 'Collect advance', 'Start execution', 'Present concept',
-  ],
-  clientNames: INDIAN_NAMES,
-  emailDomain: 'homeowner.in',
-  phonePrefix: '+91-',
 };
 
-const HEALTHCARE_CONFIG: TemplateConfig = {
+// ─── 5. Clinic / Healthcare ─────────────────────────────────
+
+const healthcare: SampleTemplate = {
   id: 'healthcare',
   name: 'Clinic / Healthcare',
-  description: 'Patient and appointment leads for clinics',
+  description: 'Patient and appointment leads',
   icon: '🏥',
-  stages: [
-    { name: 'Enquiry', probabilityRange: [5, 15] },
-    { name: 'Appointment Booked', probabilityRange: [20, 35] },
-    { name: 'Consultation Done', probabilityRange: [35, 50] },
-    { name: 'Treatment Plan', probabilityRange: [45, 60] },
-    { name: 'Payment', probabilityRange: [70, 85] },
-    { name: 'In Treatment', probabilityRange: [85, 95] },
-    { name: 'Completed', probabilityRange: [100, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('h01', 'Ramesh Gupta', 'Google Ads', 'Delhi', 'Dental implant', 'Enquiry', 'Dr. Sharma', '2026-06-18', 1, 3, 10, 'Call for consultation'),
+    lead('h02', 'Sunita Rao', 'Website', 'Mumbai', 'Orthopedic consultation', 'Enquiry', 'Dr. Patel', '2026-06-17', 2, 5, 10, 'Send clinic details'),
+    lead('h03', 'Prakash Menon', 'Referral', 'Bangalore', 'Eye surgery — cataract', 'Enquiry', 'Unassigned', '2026-06-16', 3, 2, 5, 'Assign coordinator'),
+    lead('h04', 'Kavitha Nair', 'Phone Call', 'Chennai', 'Knee replacement', 'Enquiry', 'Neha (Coordinator)', '2026-06-18', 1, 8, 10, 'Schedule appointment'),
+    lead('h05', 'Anil Kumar', 'Walk-in', 'Hyderabad', 'Dental treatment — root canal', 'Enquiry', 'Dr. Sharma', '2026-06-15', 4, 1, 10, 'Book follow-up slot'),
+    lead('h06', 'Geeta Sharma', 'Google Ads', 'Pune', 'Cosmetic dentistry', 'Enquiry', 'Dr. Patel', '2026-06-14', 5, 4, 10, 'Send treatment options'),
+    lead('h07', 'Manoj Tiwari', 'Website', 'Delhi', 'Spine consultation', 'Appointment Booked', 'Dr. Sharma', '2026-06-17', 2, 10, 25, 'Confirm appointment'),
+    lead('h08', 'Priya Iyer', 'Referral', 'Mumbai', 'Eye surgery — LASIK', 'Appointment Booked', 'Dr. Patel', '2026-06-16', 3, 1.5, 25, 'Send pre-op instructions'),
+    lead('h09', 'Vivek Pillai', 'Phone Call', 'Bangalore', 'Dental implant — full mouth', 'Appointment Booked', 'Neha (Coordinator)', '2026-06-14', 5, 12, 25, 'Prepare treatment estimate'),
+    lead('h10', 'Shalini Das', 'Google Ads', 'Chennai', 'Orthopedic consultation', 'Appointment Booked', 'Unassigned', '2026-06-10', 9, 6, 20, 'Assign doctor'),
+    lead('h11', 'Rajesh Verma', 'Walk-in', 'Hyderabad', 'Knee replacement', 'Consultation Done', 'Dr. Sharma', '2026-06-16', 3, 15, 40, 'Share treatment plan'),
+    lead('h12', 'Anita Pillai', 'Website', 'Pune', 'Dental treatment — braces', 'Consultation Done', 'Dr. Patel', '2026-06-15', 4, 2.5, 40, 'Send payment options'),
+    lead('h13', 'Suresh Nair', 'Referral', 'Delhi', 'Eye surgery — cataract', 'Consultation Done', 'Neha (Coordinator)', '2026-06-13', 6, 3, 35, 'Follow up on decision'),
+    lead('h14', 'Deepa Reddy', 'Google Ads', 'Mumbai', 'Cosmetic dentistry', 'Consultation Done', 'Dr. Sharma', '2026-06-09', 10, 5, 30, 'Re-engage patient'),
+    lead('h15', 'Harish Mehta', 'Phone Call', 'Bangalore', 'Hip replacement', 'Treatment Plan', 'Dr. Patel', '2026-06-17', 2, 18, 55, 'Get insurance approval'),
+    lead('h16', 'Meena Krishnan', 'Walk-in', 'Chennai', 'Dental implant', 'Treatment Plan', 'Neha (Coordinator)', '2026-06-14', 5, 4, 50, 'Confirm treatment schedule'),
+    lead('h17', 'Arun Sharma', 'Google Ads', 'Hyderabad', 'Spine surgery', 'Treatment Plan', 'Unassigned', '2026-06-11', 8, 20, 45, 'Assign surgeon'),
+    lead('h18', 'Lakshmi Rao', 'Referral', 'Pune', 'Knee replacement', 'Treatment Plan', 'Dr. Sharma', '2026-06-16', 3, 12, 55, 'Schedule surgery date'),
+    lead('h19', 'Vikram Patel', 'Website', 'Delhi', 'Eye surgery — LASIK', 'Payment', 'Dr. Patel', '2026-06-17', 2, 1.5, 85, 'Process payment'),
+    lead('h20', 'Nandini Gupta', 'Phone Call', 'Mumbai', 'Dental treatment — root canal', 'Payment', 'Neha (Coordinator)', '2026-06-15', 4, 1, 85, 'Confirm payment received'),
+    lead('h21', 'Ravi Menon', 'Google Ads', 'Bangalore', 'Hip replacement', 'In Treatment', 'Dr. Sharma', '2026-06-10', 3, 22, 90, 'Post-op check scheduled'),
+    lead('h22', 'Sunitha Nair', 'Referral', 'Chennai', 'Dental implant — full mouth', 'In Treatment', 'Dr. Patel', '2026-06-05', 5, 15, 90, 'Phase 2 treatment'),
+    lead('h23', 'Kiran Reddy', 'Walk-in', 'Hyderabad', 'Knee replacement', 'In Treatment', 'Neha (Coordinator)', '2026-06-08', 2, 14, 85, 'Rehab plan review'),
+    lead('h24', 'Girish Kumar', 'Website', 'Pune', 'Eye surgery — cataract', 'Completed', 'Dr. Sharma', '2026-05-20', 1, 2, 100, 'Schedule 3-month review'),
+    lead('h25', 'Divya Menon', 'Google Ads', 'Delhi', 'Dental treatment — braces', 'Completed', 'Dr. Patel', '2026-05-15', 2, 3, 100, 'Request review'),
+    lead('h26', 'Prakash Rao', 'Referral', 'Mumbai', 'Orthopedic consultation', 'Completed', 'Neha (Coordinator)', '2026-05-25', 1, 8, 100, 'Send follow-up reminder'),
+    lead('h27', 'Shanti Kumar', 'Phone Call', 'Bangalore', 'Spine surgery', 'Lost', 'Dr. Sharma', '2026-06-02', 4, 25, 0, 'Archive — chose other hospital'),
+    lead('h28', 'Varun Iyer', 'Google Ads', 'Chennai', 'Dental implant', 'Lost', 'Unassigned', '2026-06-05', 3, 4, 0, 'Archive — no response'),
+    lead('h29', 'Pooja Gupta', 'Website', 'Hyderabad', 'Cosmetic dentistry', 'Lost', 'Dr. Patel', '2026-05-28', 5, 6, 0, 'Archive — deferred treatment'),
+    lead('h30', 'Mohan Reddy', 'Walk-in', 'Pune', 'Knee replacement', 'Lost', 'Neha (Coordinator)', '2026-06-01', 6, 14, 0, 'Archive — insurance denied'),
+    lead('h31', 'Revathi Nair', 'Google Ads', 'Delhi', 'Eye surgery — LASIK', 'Enquiry', 'Dr. Sharma', '2026-06-18', 1, 1.5, 10, 'Send eligibility checklist'),
+    lead('h32', 'Tanmay Bose', 'Referral', 'Mumbai', 'Hip replacement', 'Appointment Booked', 'Dr. Patel', '2026-06-17', 2, 20, 25, 'Prepare imaging request'),
   ],
-  owners: ['Dr. Anand K.', 'Dr. Sunita R.', 'Priya (Coord)', 'Ravi (Coord)'],
-  ownerTeam: 'Clinical Team',
-  locations: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune', 'Ahmedabad', 'Jaipur'],
-  requirements: [
-    'Dental implants - full mouth', 'Orthodontic braces consultation', 'Knee replacement surgery',
-    'Skin treatment - acne scars', 'Hair transplant evaluation', 'Eye LASIK surgery',
-    'Physiotherapy - sports injury', 'IVF consultation', 'Cosmetic rhinoplasty',
-    'Weight loss program', 'Cardiac checkup package', 'Diabetes management plan',
-  ],
-  sources: ['Phone Call', 'WhatsApp', 'Google Ads', 'Website', 'Referral', 'Walk-in'],
-  valueRange: [15000, 500000],
-  nextActions: [
-    'Confirm appointment', 'Share treatment plan', 'Collect reports', 'Schedule follow-up',
-    'Process payment', 'Send pre-op instructions', 'Book surgery slot', 'Send recovery guide',
-  ],
-  clientNames: HEALTHCARE_NAMES,
-  emailDomain: 'patient.in',
-  phonePrefix: '+91-',
 };
 
-const REALESTATE_CONFIG: TemplateConfig = {
+// ─── 6. Real Estate ─────────────────────────────────────────
+
+const realestate: SampleTemplate = {
   id: 'realestate',
   name: 'Real Estate',
-  description: 'Property sales and rental leads',
+  description: 'Property and real estate leads',
   icon: '🏗️',
-  stages: [
-    { name: 'Enquiry', probabilityRange: [5, 12] },
-    { name: 'Contacted', probabilityRange: [10, 20] },
-    { name: 'Site Visit', probabilityRange: [20, 35] },
-    { name: 'Interested', probabilityRange: [35, 50] },
-    { name: 'Negotiation', probabilityRange: [50, 65] },
-    { name: 'Booking', probabilityRange: [70, 85] },
-    { name: 'Agreement', probabilityRange: [85, 95] },
-    { name: 'Registered', probabilityRange: [98, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('r01', 'Rajesh Gupta', 'Website', 'Mumbai', '3BHK Apartment', 'Enquiry', 'Suresh M.', '2026-06-18', 1, 120, 10, 'Send project brochure'),
+    lead('r02', 'Sunita Mehta', 'Google Ads', 'Delhi', 'Villa plot', 'Enquiry', 'Priya D.', '2026-06-17', 2, 80, 10, 'Schedule call'),
+    lead('r03', 'Anand Krishnan', 'Referral', 'Bangalore', 'Commercial space 3000sqft', 'Enquiry', 'Unassigned', '2026-06-16', 3, 250, 5, 'Assign sales exec'),
+    lead('r04', 'Kavitha Pillai', 'Walk-in', 'Chennai', '2BHK Apartment', 'Enquiry', 'Vikram S.', '2026-06-18', 1, 65, 10, 'Send floor plans'),
+    lead('r05', 'Manoj Sharma', 'Phone Call', 'Hyderabad', '4BHK Premium Flat', 'Enquiry', 'Suresh M.', '2026-06-15', 4, 180, 10, 'Qualify budget'),
+    lead('r06', 'Priya Iyer', 'Website', 'Pune', '3BHK Apartment', 'Contacted', 'Priya D.', '2026-06-17', 2, 95, 20, 'Share virtual tour'),
+    lead('r07', 'Vikram Nair', 'Google Ads', 'Mumbai', 'Villa plot — premium', 'Contacted', 'Vikram S.', '2026-06-14', 5, 200, 20, 'Send location map'),
+    lead('r08', 'Deepa Shah', 'Referral', 'Delhi', 'Commercial space 5000sqft', 'Contacted', 'Suresh M.', '2026-06-10', 9, 400, 15, 'Re-engage — stalled'),
+    lead('r09', 'Harish Reddy', 'Walk-in', 'Bangalore', '2BHK Apartment', 'Contacted', 'Unassigned', '2026-06-13', 6, 55, 15, 'Assign and follow up'),
+    lead('r10', 'Shalini Kumar', 'Phone Call', 'Chennai', '3BHK Apartment', 'Site Visit', 'Priya D.', '2026-06-16', 3, 110, 35, 'Arrange site visit'),
+    lead('r11', 'Arun Mehta', 'Website', 'Hyderabad', 'Villa plot', 'Site Visit', 'Vikram S.', '2026-06-15', 4, 90, 35, 'Confirm visit date'),
+    lead('r12', 'Nandini Rao', 'Google Ads', 'Pune', '4BHK Premium Flat', 'Site Visit', 'Suresh M.', '2026-06-11', 8, 220, 30, 'Follow up post-visit'),
+    lead('r13', 'Girish Patel', 'Referral', 'Mumbai', 'Commercial space 2000sqft', 'Site Visit', 'Priya D.', '2026-06-14', 5, 150, 35, 'Share payment plan'),
+    lead('r14', 'Meena Nair', 'Walk-in', 'Delhi', '3BHK Apartment', 'Interested', 'Vikram S.', '2026-06-17', 2, 100, 50, 'Send comparison sheet'),
+    lead('r15', 'Suresh Pillai', 'Phone Call', 'Bangalore', 'Villa plot — corner', 'Interested', 'Unassigned', '2026-06-12', 7, 130, 45, 'Assign closer'),
+    lead('r16', 'Ravi Sharma', 'Website', 'Chennai', '2BHK Apartment', 'Interested', 'Suresh M.', '2026-06-16', 3, 58, 50, 'Send loan pre-approval info'),
+    lead('r17', 'Pooja Verma', 'Google Ads', 'Hyderabad', '4BHK Premium Flat', 'Negotiation', 'Priya D.', '2026-06-15', 4, 195, 65, 'Negotiate price'),
+    lead('r18', 'Kiran Desai', 'Referral', 'Pune', '3BHK Apartment', 'Negotiation', 'Vikram S.', '2026-06-09', 10, 105, 60, 'Offer early-bird discount'),
+    lead('r19', 'Tanmay Bose', 'Walk-in', 'Mumbai', 'Commercial space', 'Negotiation', 'Suresh M.', '2026-06-16', 3, 300, 65, 'Finalize lease terms'),
+    lead('r20', 'Shilpa Krishnan', 'Phone Call', 'Delhi', 'Villa plot', 'Booking', 'Priya D.', '2026-06-14', 2, 85, 85, 'Process booking amount'),
+    lead('r21', 'Varun Gupta', 'Website', 'Bangalore', '3BHK Apartment', 'Booking', 'Vikram S.', '2026-06-12', 3, 115, 85, 'Send booking confirmation'),
+    lead('r22', 'Anita Menon', 'Google Ads', 'Chennai', '4BHK Premium Flat', 'Agreement', 'Unassigned', '2026-06-10', 2, 210, 90, 'Draft agreement'),
+    lead('r23', 'Prakash Reddy', 'Referral', 'Hyderabad', 'Villa — gated community', 'Agreement', 'Suresh M.', '2026-06-08', 4, 350, 90, 'Schedule registration'),
+    lead('r24', 'Lakshmi Iyer', 'Walk-in', 'Pune', '2BHK Apartment', 'Registered', 'Priya D.', '2026-05-25', 1, 60, 100, 'Hand over possession'),
+    lead('r25', 'Dinesh Kumar', 'Phone Call', 'Mumbai', '3BHK Apartment', 'Registered', 'Vikram S.', '2026-05-20', 2, 125, 100, 'Send welcome kit'),
+    lead('r26', 'Revathi Nair', 'Website', 'Delhi', 'Commercial space', 'Registered', 'Suresh M.', '2026-05-15', 1, 500, 100, 'Handover completed'),
+    lead('r27', 'Mohan Patel', 'Google Ads', 'Bangalore', '3BHK Apartment', 'Lost', 'Priya D.', '2026-06-01', 5, 98, 0, 'Archive — chose other project'),
+    lead('r28', 'Geeta Sharma', 'Referral', 'Chennai', 'Villa plot', 'Lost', 'Vikram S.', '2026-05-28', 4, 75, 0, 'Archive — loan rejected'),
+    lead('r29', 'Anil Mehta', 'Walk-in', 'Hyderabad', '4BHK Premium Flat', 'Lost', 'Suresh M.', '2026-06-05', 3, 185, 0, 'Archive — postponed purchase'),
+    lead('r30', 'Sunitha Rao', 'Phone Call', 'Pune', '2BHK Apartment', 'Lost', 'Unassigned', '2026-06-03', 6, 52, 0, 'Archive — no response'),
+    lead('r31', 'Nikhil Desai', 'Website', 'Mumbai', 'Villa — independent', 'Enquiry', 'Priya D.', '2026-06-18', 1, 280, 10, 'Send project details'),
+    lead('r32', 'Swathi Nair', 'Google Ads', 'Delhi', '3BHK Apartment', 'Contacted', 'Vikram S.', '2026-06-17', 2, 88, 20, 'Arrange callback'),
+    lead('r33', 'Arjun Reddy', 'Referral', 'Bangalore', 'Commercial space 1500sqft', 'Site Visit', 'Suresh M.', '2026-06-13', 6, 140, 35, 'Prepare visit logistics'),
+    lead('r34', 'Divya Kapoor', 'Walk-in', 'Chennai', '4BHK Premium Flat', 'Interested', 'Priya D.', '2026-06-11', 8, 175, 45, 'Send customization options'),
+    lead('r35', 'Rahul Pillai', 'Phone Call', 'Hyderabad', 'Villa plot', 'Negotiation', 'Vikram S.', '2026-06-14', 5, 95, 60, 'Counter-offer discussion'),
   ],
-  owners: ['Mohit T.', 'Anita G.', 'Sanjay B.', 'Rekha P.'],
-  ownerTeam: 'Sales',
-  locations: ['Mumbai', 'Pune', 'Bangalore', 'Hyderabad', 'Noida', 'Gurgaon', 'Thane', 'Navi Mumbai'],
-  requirements: [
-    '2BHK flat - budget segment', '3BHK premium apartment', 'Row house with garden',
-    'Commercial office space 1500 sqft', 'Plot 2000 sqft residential', 'Penthouse 4BHK sea view',
-    '1BHK investment property', 'Villa project 3000 sqft', 'Shop space in mall',
-    'Warehouse 5000 sqft', '4BHK duplex apartment', 'Studio apartment for rental income',
-  ],
-  sources: ['Google Ads', 'Website', 'Phone Call', 'Referral', 'WhatsApp', 'Facebook', 'Walk-in'],
-  valueRange: [2500000, 25000000],
-  nextActions: [
-    'Schedule site visit', 'Share brochure', 'Follow up post visit', 'Negotiate price',
-    'Process booking amount', 'Prepare agreement', 'Arrange home loan assist', 'Registry coordination',
-  ],
-  clientNames: REALESTATE_NAMES,
-  emailDomain: 'buyer.in',
-  phonePrefix: '+91-',
 };
 
-const EDUCATION_CONFIG: TemplateConfig = {
+// ─── 7. Coaching / Education ─────────────────────────────────
+
+const education: SampleTemplate = {
   id: 'education',
   name: 'Coaching / Education',
   description: 'Student enrollment and coaching leads',
-  icon: '🎓',
-  stages: [
-    { name: 'Enquiry', probabilityRange: [5, 15] },
-    { name: 'Counselling', probabilityRange: [15, 30] },
-    { name: 'Application', probabilityRange: [30, 45] },
-    { name: 'Document Submitted', probabilityRange: [40, 55] },
-    { name: 'Admission Offered', probabilityRange: [55, 70] },
-    { name: 'Fee Paid', probabilityRange: [85, 95] },
-    { name: 'Enrolled', probabilityRange: [98, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  icon: '📚',
+  leads: [
+    lead('e01', 'Rohit Sharma', 'Website', 'Delhi', 'MBA program', 'Enquiry', 'Prof. Kumar', '2026-06-18', 1, 12, 10, 'Send program brochure'),
+    lead('e02', 'Priya Nair', 'Instagram', 'Mumbai', 'Data Science course', 'Enquiry', 'Anita D.', '2026-06-17', 2, 4, 10, 'Share curriculum details'),
+    lead('e03', 'Karthik Reddy', 'Referral', 'Bangalore', 'Engineering prep — IIT', 'Enquiry', 'Unassigned', '2026-06-16', 3, 3, 5, 'Assign counselor'),
+    lead('e04', 'Meena Iyer', 'Google Ads', 'Chennai', 'MBA program', 'Enquiry', 'Counselor Team', '2026-06-18', 1, 15, 10, 'Schedule counseling'),
+    lead('e05', 'Anil Gupta', 'Walk-in', 'Hyderabad', 'Data Science course', 'Enquiry', 'Prof. Kumar', '2026-06-15', 4, 5, 10, 'Share placement stats'),
+    lead('e06', 'Deepa Pillai', 'Website', 'Pune', 'Digital Marketing certification', 'Enquiry', 'Anita D.', '2026-06-14', 5, 2, 10, 'Send course outline'),
+    lead('e07', 'Vivek Mehta', 'Instagram', 'Delhi', 'MBA program', 'Counselling', 'Counselor Team', '2026-06-17', 2, 12, 25, 'Complete counseling session'),
+    lead('e08', 'Sunita Rao', 'Referral', 'Mumbai', 'Data Science course', 'Counselling', 'Prof. Kumar', '2026-06-14', 5, 6, 25, 'Address course queries'),
+    lead('e09', 'Harish Kumar', 'Google Ads', 'Bangalore', 'Engineering prep — IIT', 'Counselling', 'Anita D.', '2026-06-10', 9, 3, 20, 'Follow up — went quiet'),
+    lead('e10', 'Kavitha Sharma', 'Walk-in', 'Chennai', 'MBA program', 'Counselling', 'Unassigned', '2026-06-16', 3, 10, 25, 'Assign counselor'),
+    lead('e11', 'Rajesh Nair', 'Website', 'Hyderabad', 'Data Science course', 'Application', 'Counselor Team', '2026-06-16', 3, 5, 40, 'Help with application'),
+    lead('e12', 'Pooja Verma', 'Instagram', 'Pune', 'Digital Marketing certification', 'Application', 'Prof. Kumar', '2026-06-15', 4, 2, 40, 'Collect documents'),
+    lead('e13', 'Suresh Reddy', 'Referral', 'Delhi', 'MBA program', 'Application', 'Anita D.', '2026-06-11', 8, 14, 35, 'Chase pending documents'),
+    lead('e14', 'Anita Pillai', 'Google Ads', 'Mumbai', 'Engineering prep — NEET', 'Application', 'Counselor Team', '2026-06-14', 5, 4, 40, 'Review application'),
+    lead('e15', 'Manoj Iyer', 'Walk-in', 'Bangalore', 'Data Science course', 'Document Submitted', 'Prof. Kumar', '2026-06-16', 3, 6, 50, 'Verify documents'),
+    lead('e16', 'Geeta Kumar', 'Website', 'Chennai', 'MBA program', 'Document Submitted', 'Anita D.', '2026-06-13', 6, 12, 50, 'Schedule entrance test'),
+    lead('e17', 'Vikram Gupta', 'Instagram', 'Hyderabad', 'Digital Marketing certification', 'Document Submitted', 'Unassigned', '2026-06-09', 10, 2, 45, 'Assign and verify'),
+    lead('e18', 'Nandini Mehta', 'Referral', 'Pune', 'Engineering prep — IIT', 'Admission Offered', 'Counselor Team', '2026-06-16', 3, 3, 65, 'Confirm acceptance'),
+    lead('e19', 'Dinesh Rao', 'Google Ads', 'Delhi', 'MBA program', 'Admission Offered', 'Prof. Kumar', '2026-06-14', 5, 15, 60, 'Send fee structure'),
+    lead('e20', 'Shilpa Nair', 'Walk-in', 'Mumbai', 'Data Science course', 'Admission Offered', 'Anita D.', '2026-06-11', 8, 5, 55, 'Follow up on acceptance'),
+    lead('e21', 'Prakash Sharma', 'Website', 'Bangalore', 'MBA program', 'Admission Offered', 'Counselor Team', '2026-06-15', 4, 12, 60, 'Address scholarship query'),
+    lead('e22', 'Ravi Pillai', 'Instagram', 'Chennai', 'Engineering prep — NEET', 'Fee Paid', 'Prof. Kumar', '2026-06-12', 2, 4, 90, 'Send welcome kit'),
+    lead('e23', 'Tanvi Gupta', 'Referral', 'Hyderabad', 'Data Science course', 'Fee Paid', 'Anita D.', '2026-06-10', 3, 6, 90, 'Assign batch and mentor'),
+    lead('e24', 'Arun Reddy', 'Google Ads', 'Pune', 'MBA program', 'Enrolled', 'Counselor Team', '2026-05-25', 1, 12, 100, 'Orientation scheduled'),
+    lead('e25', 'Lakshmi Iyer', 'Walk-in', 'Delhi', 'Digital Marketing certification', 'Enrolled', 'Prof. Kumar', '2026-05-20', 2, 2, 100, 'Classes started'),
+    lead('e26', 'Mohan Kumar', 'Website', 'Mumbai', 'Engineering prep — IIT', 'Enrolled', 'Unassigned', '2026-05-15', 1, 3, 100, 'Assign batch mentor'),
+    lead('e27', 'Revathi Rao', 'Instagram', 'Bangalore', 'MBA program', 'Lost', 'Anita D.', '2026-06-01', 5, 12, 0, 'Archive — chose other institute'),
+    lead('e28', 'Varun Sharma', 'Google Ads', 'Chennai', 'Data Science course', 'Lost', 'Counselor Team', '2026-05-28', 4, 5, 0, 'Archive — deferred admission'),
+    lead('e29', 'Sunitha Nair', 'Referral', 'Hyderabad', 'Engineering prep — NEET', 'Lost', 'Prof. Kumar', '2026-06-03', 3, 4, 0, 'Archive — budget constraints'),
+    lead('e30', 'Girish Mehta', 'Walk-in', 'Pune', 'MBA program', 'Lost', 'Anita D.', '2026-06-05', 6, 10, 0, 'Archive — no response'),
+    lead('e31', 'Divya Krishnan', 'Website', 'Delhi', 'Data Science course', 'Enquiry', 'Counselor Team', '2026-06-18', 1, 6, 10, 'Send demo class link'),
+    lead('e32', 'Nikhil Patel', 'Instagram', 'Mumbai', 'Digital Marketing certification', 'Counselling', 'Prof. Kumar', '2026-06-12', 7, 2, 20, 'Re-engage — stalled'),
   ],
-  owners: ['Meera C.', 'Suresh N.', 'Anita B.', 'Karthik R.'],
-  ownerTeam: 'Admissions',
-  locations: ['Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata', 'Lucknow'],
-  requirements: [
-    'MBA full-time program', 'Data Science certification', 'Digital marketing course',
-    'UPSC coaching - prelims batch', 'IELTS preparation intensive', 'B.Tech CSE admission',
-    'CA foundation coaching', 'Study abroad - MS in USA', 'NEET preparation batch',
-    'Executive MBA weekend program', 'Python + AI bootcamp', 'GRE + university application',
-  ],
-  sources: ['Website', 'Google Ads', 'Phone Call', 'WhatsApp', 'Instagram', 'Referral', 'Campaign'],
-  valueRange: [25000, 500000],
-  nextActions: [
-    'Schedule counselling', 'Send course brochure', 'Follow up on application', 'Collect documents',
-    'Process admission offer', 'Share fee structure', 'Arrange campus tour', 'Connect with alumni',
-  ],
-  clientNames: EDUCATION_NAMES,
-  emailDomain: 'student.edu',
-  phonePrefix: '+91-',
 };
 
-const EVENTS_CONFIG: TemplateConfig = {
+// ─── 8. Events / Exhibitions ─────────────────────────────────
+
+const events: SampleTemplate = {
   id: 'events',
   name: 'Events / Exhibitions',
   description: 'Event planning and exhibition leads',
   icon: '🎪',
-  stages: [
-    { name: 'Enquiry', probabilityRange: [5, 15] },
-    { name: 'Consultation', probabilityRange: [15, 25] },
-    { name: 'Proposal Sent', probabilityRange: [25, 40] },
-    { name: 'Quotation Sent', probabilityRange: [35, 50] },
-    { name: 'Negotiation', probabilityRange: [50, 65] },
-    { name: 'Advance Received', probabilityRange: [75, 90] },
-    { name: 'Planning', probabilityRange: [85, 95] },
-    { name: 'Execution', probabilityRange: [90, 98] },
-    { name: 'Completed', probabilityRange: [100, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('ev01', 'Prestige Corp.', 'WhatsApp', 'Bangalore', 'Corporate event — 500 pax', 'Enquiry', 'Meera K.', '2026-06-18', 1, 25, 10, 'Send event portfolio'),
+    lead('ev02', 'Ravi & Priya', 'Referral', 'Mumbai', 'Wedding planning — destination', 'Enquiry', 'Arjun B.', '2026-06-17', 2, 80, 10, 'Schedule consultation'),
+    lead('ev03', 'TechExpo India', 'Instagram', 'Delhi', 'Exhibition booth — 200sqm', 'Enquiry', 'Unassigned', '2026-06-16', 3, 40, 5, 'Assign event manager'),
+    lead('ev04', 'Greenleaf Foundation', 'Website', 'Chennai', 'Corporate event — charity gala', 'Enquiry', 'Swathi N.', '2026-06-18', 1, 15, 10, 'Send charity event packages'),
+    lead('ev05', 'Sanjay & Meera', 'WhatsApp', 'Hyderabad', 'Wedding planning — traditional', 'Enquiry', 'Meera K.', '2026-06-15', 4, 50, 10, 'Share wedding portfolio'),
+    lead('ev06', 'BuildCon Expo', 'Phone Call', 'Pune', 'Exhibition booth — 100sqm', 'Enquiry', 'Arjun B.', '2026-06-14', 5, 20, 10, 'Send booth options'),
+    lead('ev07', 'Meridian Inc.', 'Referral', 'Bangalore', 'Corporate event — annual meet', 'Consultation', 'Swathi N.', '2026-06-17', 2, 35, 25, 'Finalize theme'),
+    lead('ev08', 'Ankit & Divya', 'Instagram', 'Mumbai', 'Wedding planning — modern', 'Consultation', 'Meera K.', '2026-06-14', 5, 60, 25, 'Share vendor list'),
+    lead('ev09', 'AutoFair 2026', 'Website', 'Delhi', 'Exhibition booth — premium', 'Consultation', 'Arjun B.', '2026-06-10', 9, 55, 20, 'Follow up — stalled'),
+    lead('ev10', 'NovaTech', 'WhatsApp', 'Chennai', 'Corporate event — product launch', 'Consultation', 'Unassigned', '2026-06-16', 3, 30, 25, 'Assign planner'),
+    lead('ev11', 'CloudBurst Ltd.', 'Phone Call', 'Hyderabad', 'Corporate event — team outing', 'Proposal Sent', 'Swathi N.', '2026-06-16', 3, 12, 50, 'Follow up on proposal'),
+    lead('ev12', 'Vikram & Anjali', 'Referral', 'Pune', 'Wedding planning — royal theme', 'Proposal Sent', 'Meera K.', '2026-06-13', 6, 100, 50, 'Discuss venue options'),
+    lead('ev13', 'FashionWeek India', 'Instagram', 'Bangalore', 'Exhibition booth — fashion', 'Proposal Sent', 'Arjun B.', '2026-06-15', 4, 45, 50, 'Address logistics questions'),
+    lead('ev14', 'PrimeSoft', 'Website', 'Mumbai', 'Corporate event — conference', 'Quotation Sent', 'Swathi N.', '2026-06-14', 5, 28, 55, 'Clarify AV requirements'),
+    lead('ev15', 'Manoj & Priya', 'WhatsApp', 'Delhi', 'Wedding planning — intimate', 'Quotation Sent', 'Meera K.', '2026-06-11', 8, 30, 50, 'Revise budget breakdown'),
+    lead('ev16', 'HealthCare Summit', 'Phone Call', 'Chennai', 'Exhibition booth — pharma', 'Quotation Sent', 'Unassigned', '2026-06-09', 10, 35, 45, 'Assign and negotiate'),
+    lead('ev17', 'Zenith Media', 'Referral', 'Hyderabad', 'Corporate event — media launch', 'Negotiation', 'Arjun B.', '2026-06-16', 3, 22, 65, 'Finalize budget'),
+    lead('ev18', 'Harish & Kavitha', 'Instagram', 'Pune', 'Wedding planning — 3-day', 'Negotiation', 'Swathi N.', '2026-06-14', 5, 90, 60, 'Send final package'),
+    lead('ev19', 'RetailExpo 2026', 'Website', 'Bangalore', 'Exhibition booth — 300sqm', 'Negotiation', 'Meera K.', '2026-06-12', 7, 65, 60, 'Counter-offer on pricing'),
+    lead('ev20', 'DataCon India', 'WhatsApp', 'Mumbai', 'Corporate event — tech summit', 'Advance Received', 'Arjun B.', '2026-06-10', 2, 40, 85, 'Begin vendor booking'),
+    lead('ev21', 'Suresh & Lakshmi', 'Referral', 'Delhi', 'Wedding planning — South Indian', 'Advance Received', 'Swathi N.', '2026-06-08', 3, 55, 90, 'Confirm venue and caterer'),
+    lead('ev22', 'Prestige Annual', 'Phone Call', 'Chennai', 'Corporate event — awards night', 'Planning', 'Meera K.', '2026-06-05', 4, 32, 80, 'Finalize run of show'),
+    lead('ev23', 'ArtFest Bangalore', 'Instagram', 'Bangalore', 'Exhibition booth — art gallery', 'Planning', 'Arjun B.', '2026-06-02', 5, 18, 80, 'Coordinate with artists'),
+    lead('ev24', 'Tanmay & Sneha', 'WhatsApp', 'Hyderabad', 'Wedding planning — beach', 'Execution', 'Swathi N.', '2026-05-28', 2, 70, 85, 'Day-of coordination'),
+    lead('ev25', 'ScaleUp Summit', 'Referral', 'Pune', 'Corporate event — startup meet', 'Execution', 'Meera K.', '2026-05-25', 3, 15, 85, 'Manage on-site logistics'),
+    lead('ev26', 'MedTech Expo', 'Website', 'Mumbai', 'Exhibition booth — medical', 'Completed', 'Arjun B.', '2026-05-15', 1, 38, 100, 'Send post-event report'),
+    lead('ev27', 'Nandini & Arjun', 'Instagram', 'Delhi', 'Wedding planning — garden', 'Completed', 'Swathi N.', '2026-05-10', 2, 45, 100, 'Request testimonial'),
+    lead('ev28', 'InnoFest 2026', 'WhatsApp', 'Bangalore', 'Exhibition booth — tech', 'Completed', 'Meera K.', '2026-05-20', 1, 50, 100, 'Send photos and recap'),
+    lead('ev29', 'BuilderMeet India', 'Phone Call', 'Chennai', 'Corporate event — builder summit', 'Lost', 'Unassigned', '2026-06-01', 5, 28, 0, 'Archive — event cancelled'),
+    lead('ev30', 'Varun & Pooja', 'Referral', 'Hyderabad', 'Wedding planning — budget', 'Lost', 'Arjun B.', '2026-05-28', 4, 20, 0, 'Archive — chose cheaper planner'),
+    lead('ev31', 'FoodExpo South', 'Instagram', 'Pune', 'Exhibition booth — food', 'Lost', 'Swathi N.', '2026-06-03', 3, 25, 0, 'Archive — postponed to 2027'),
+    lead('ev32', 'Kiran & Meera', 'WhatsApp', 'Mumbai', 'Wedding planning — destination', 'Enquiry', 'Meera K.', '2026-06-18', 1, 95, 10, 'Send destination packages'),
+    lead('ev33', 'TechStar Awards', 'Referral', 'Delhi', 'Corporate event — awards gala', 'Consultation', 'Arjun B.', '2026-06-12', 7, 42, 20, 'Re-engage — delayed response'),
   ],
-  owners: ['Priya M.', 'Ravi S.', 'Ankit B.', 'Divya N.'],
-  ownerTeam: 'Events Team',
-  locations: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Goa', 'Jaipur', 'Udaipur', 'Chennai'],
-  requirements: [
-    'Corporate annual conference 500 pax', 'Wedding reception - grand ballroom',
-    'Product launch event', 'Exhibition stall design 9x6m', 'Birthday party - premium theme',
-    'Corporate team outing 100 pax', 'Award ceremony and gala dinner',
-    'Trade show booth + collateral', 'Destination wedding planning',
-    'Seminar + workshop setup 200 pax', 'Brand activation campaign', 'Music festival stage setup',
-  ],
-  sources: ['Referral', 'Instagram', 'WhatsApp', 'Website', 'Phone Call', 'Email'],
-  valueRange: [100000, 3000000],
-  nextActions: [
-    'Site recce', 'Send mood board', 'Share detailed proposal', 'Negotiate vendor rates',
-    'Collect advance payment', 'Finalize vendor list', 'Coordinate logistics', 'Run rehearsal',
-  ],
-  clientNames: EVENTS_NAMES,
-  emailDomain: 'events-client.com',
-  phonePrefix: '+91-',
 };
 
-const RETAIL_CONFIG: TemplateConfig = {
+// ─── 9. Retail / Local Business ──────────────────────────────
+
+const retail: SampleTemplate = {
   id: 'retail',
   name: 'Retail / Local Business',
-  description: 'Retail and local business leads',
+  description: 'Local business and retail leads',
   icon: '🛍️',
-  stages: [
-    { name: 'New Inquiry', probabilityRange: [5, 15] },
-    { name: 'First Contact', probabilityRange: [10, 25] },
-    { name: 'Quote Sent', probabilityRange: [30, 45] },
-    { name: 'Follow-up', probabilityRange: [40, 55] },
-    { name: 'Negotiation', probabilityRange: [50, 70] },
-    { name: 'Completed', probabilityRange: [100, 100], statusOverride: 'won' },
-    { name: 'Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('rt01', 'Sharma Electronics', 'Walk-in', 'Delhi', 'Bulk order inquiry — TVs', 'New Inquiry', 'Ravi S.', '2026-06-18', 1, 8, 10, 'Share product catalog'),
+    lead('rt02', 'Priya Fashion House', 'WhatsApp', 'Mumbai', 'Custom product — wedding collection', 'New Inquiry', 'Pooja M.', '2026-06-17', 2, 5, 10, 'Send fabric samples'),
+    lead('rt03', 'GreenMart Organics', 'Instagram', 'Bangalore', 'Wholesale pricing — organic range', 'New Inquiry', 'Unassigned', '2026-06-16', 3, 12, 5, 'Assign sales rep'),
+    lead('rt04', 'Kumar Hardware', 'Phone Call', 'Chennai', 'Bulk order inquiry — power tools', 'New Inquiry', 'Store Team', '2026-06-18', 1, 6, 10, 'Send price list'),
+    lead('rt05', 'Luxe Home Decor', 'Google Ads', 'Hyderabad', 'Custom product — furniture', 'New Inquiry', 'Ravi S.', '2026-06-15', 4, 15, 10, 'Schedule showroom visit'),
+    lead('rt06', 'Tanvi Boutique', 'Walk-in', 'Pune', 'Wholesale pricing — accessories', 'New Inquiry', 'Pooja M.', '2026-06-14', 5, 3, 10, 'Send wholesale terms'),
+    lead('rt07', 'Metro Appliances', 'WhatsApp', 'Delhi', 'Bulk order inquiry — ACs', 'First Contact', 'Store Team', '2026-06-17', 2, 20, 25, 'Confirm quantities'),
+    lead('rt08', 'Ravi Garments', 'Instagram', 'Mumbai', 'Custom product — uniforms', 'First Contact', 'Ravi S.', '2026-06-14', 5, 4, 20, 'Share design options'),
+    lead('rt09', 'FreshFarm Dairy', 'Phone Call', 'Bangalore', 'Wholesale pricing — dairy products', 'First Contact', 'Unassigned', '2026-06-10', 9, 8, 15, 'Assign and quote'),
+    lead('rt10', 'Anand Jewellers', 'Walk-in', 'Chennai', 'Custom product — gold jewelry', 'First Contact', 'Pooja M.', '2026-06-16', 3, 18, 25, 'Share design catalog'),
+    lead('rt11', 'Deepa Silks', 'WhatsApp', 'Hyderabad', 'Bulk order inquiry — sarees', 'Quote Sent', 'Store Team', '2026-06-16', 3, 10, 45, 'Follow up on quote'),
+    lead('rt12', 'CityMart Retail', 'Instagram', 'Pune', 'Wholesale pricing — FMCG', 'Quote Sent', 'Ravi S.', '2026-06-13', 6, 15, 40, 'Negotiate MOQ'),
+    lead('rt13', 'Kavitha Textiles', 'Phone Call', 'Delhi', 'Custom product — curtains', 'Quote Sent', 'Pooja M.', '2026-06-11', 8, 2, 40, 'Revise quote'),
+    lead('rt14', 'Sunrise Bakery', 'Walk-in', 'Mumbai', 'Bulk order inquiry — equipment', 'Quote Sent', 'Store Team', '2026-06-15', 4, 7, 45, 'Confirm delivery timeline'),
+    lead('rt15', 'Prakash Mobiles', 'Google Ads', 'Bangalore', 'Wholesale pricing — phones', 'Quote Sent', 'Unassigned', '2026-06-09', 10, 20, 35, 'Assign and follow up'),
+    lead('rt16', 'NovaMart', 'WhatsApp', 'Chennai', 'Bulk order inquiry — stationery', 'Follow-up', 'Ravi S.', '2026-06-16', 3, 3, 50, 'Check stock availability'),
+    lead('rt17', 'Geeta Home Goods', 'Instagram', 'Hyderabad', 'Custom product — kitchenware', 'Follow-up', 'Pooja M.', '2026-06-14', 5, 5, 50, 'Send revised samples'),
+    lead('rt18', 'Mehta Wholesale', 'Phone Call', 'Pune', 'Wholesale pricing — electronics', 'Follow-up', 'Store Team', '2026-06-11', 8, 18, 45, 'Re-engage — delayed'),
+    lead('rt19', 'Shalini Crafts', 'Walk-in', 'Delhi', 'Custom product — handicrafts', 'Follow-up', 'Ravi S.', '2026-06-17', 2, 1, 50, 'Confirm custom specs'),
+    lead('rt20', 'PrimeMart', 'Google Ads', 'Mumbai', 'Bulk order inquiry — groceries', 'Negotiation', 'Pooja M.', '2026-06-16', 3, 12, 65, 'Finalize discount'),
+    lead('rt21', 'Arjun Furniture', 'WhatsApp', 'Bangalore', 'Custom product — office furniture', 'Negotiation', 'Unassigned', '2026-06-12', 7, 14, 60, 'Assign closer'),
+    lead('rt22', 'UrbanStyle', 'Instagram', 'Chennai', 'Wholesale pricing — fashion', 'Negotiation', 'Store Team', '2026-06-14', 5, 9, 65, 'Send bulk pricing tier'),
+    lead('rt23', 'Nair Supermarket', 'Phone Call', 'Hyderabad', 'Bulk order inquiry — beverages', 'Negotiation', 'Ravi S.', '2026-06-09', 10, 6, 55, 'Final counter-offer'),
+    lead('rt24', 'Bloom Florist', 'Walk-in', 'Pune', 'Wholesale pricing — flowers', 'Completed', 'Pooja M.', '2026-05-25', 1, 2, 100, 'Schedule next order'),
+    lead('rt25', 'Suresh Sports', 'WhatsApp', 'Delhi', 'Bulk order inquiry — equipment', 'Completed', 'Store Team', '2026-05-20', 2, 8, 100, 'Request feedback'),
+    lead('rt26', 'Pillai Grocery', 'Phone Call', 'Mumbai', 'Wholesale pricing — staples', 'Completed', 'Ravi S.', '2026-05-15', 1, 5, 100, 'Set up recurring order'),
+    lead('rt27', 'MegaMart', 'Google Ads', 'Bangalore', 'Bulk order inquiry — appliances', 'Completed', 'Pooja M.', '2026-05-28', 3, 16, 100, 'Send loyalty discount'),
+    lead('rt28', 'Verma Textiles', 'Instagram', 'Chennai', 'Custom product — fabric', 'Lost', 'Store Team', '2026-06-01', 5, 4, 0, 'Archive — found local supplier'),
+    lead('rt29', 'QuickBite Foods', 'Walk-in', 'Hyderabad', 'Wholesale pricing — snacks', 'Lost', 'Unassigned', '2026-05-28', 4, 3, 0, 'Archive — no response'),
+    lead('rt30', 'Sharma Opticals', 'WhatsApp', 'Pune', 'Bulk order inquiry — frames', 'Lost', 'Ravi S.', '2026-06-03', 3, 7, 0, 'Archive — price too high'),
+    lead('rt31', 'Reddy Electronics', 'Phone Call', 'Delhi', 'Wholesale pricing — cables', 'Lost', 'Pooja M.', '2026-06-05', 6, 2, 0, 'Archive — minimum order too high'),
+    lead('rt32', 'Aisha Collections', 'Instagram', 'Mumbai', 'Custom product — ethnic wear', 'New Inquiry', 'Store Team', '2026-06-18', 1, 6, 10, 'Share collection catalog'),
+    lead('rt33', 'Krishna Sweets', 'Walk-in', 'Bangalore', 'Bulk order inquiry — Diwali stock', 'First Contact', 'Ravi S.', '2026-06-12', 7, 0.5, 20, 'Re-engage seasonal buyer'),
   ],
-  owners: ['Ramesh V.', 'Sunita K.', 'Anil P.', 'Geeta D.'],
-  ownerTeam: 'Retail Sales',
-  locations: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Pune', 'Ahmedabad', 'Surat', 'Indore'],
-  requirements: [
-    'Bulk order - festive season stock', 'POS system installation', 'Store renovation quote',
-    'Franchise inquiry', 'Wholesale pricing for 500 units', 'Custom packaging design',
-    'Inventory management setup', 'Signage and branding refresh', 'Delivery logistics partnership',
-    'Digital payment terminal setup', 'Loyalty program integration', 'Staff uniform bulk order',
-  ],
-  sources: ['WhatsApp', 'Phone Call', 'Walk-in', 'Referral', 'Google Ads', 'Website'],
-  valueRange: [10000, 300000],
-  nextActions: [
-    'Send price list', 'Schedule store visit', 'Share bulk discount quote', 'Follow up on order',
-    'Arrange product demo', 'Process order', 'Negotiate payment terms', 'Confirm delivery date',
-  ],
-  clientNames: RETAIL_NAMES,
-  emailDomain: 'retailer.in',
-  phonePrefix: '+91-',
 };
 
-const VIRALREELS_CONFIG: TemplateConfig = {
+// ─── 10. ViralReels Sample ───────────────────────────────────
+
+const viralreels: SampleTemplate = {
   id: 'viralreels',
   name: 'ViralReels Sample',
-  description: 'Social media growth agency sample data',
+  description: 'Social media growth agency leads',
   icon: '🎬',
-  stages: [
-    { name: 'New Inquiry', probabilityRange: [5, 15] },
-    { name: 'First Contact', probabilityRange: [10, 20] },
-    { name: 'Qualified', probabilityRange: [20, 35] },
-    { name: 'Demo Booked', probabilityRange: [30, 45] },
-    { name: 'Demo Completed', probabilityRange: [40, 55] },
-    { name: 'Proposal Sent', probabilityRange: [50, 65] },
-    { name: 'Negotiation', probabilityRange: [55, 75] },
-    { name: 'Closed Won', probabilityRange: [95, 100], statusOverride: 'won' },
-    { name: 'Active Customer', probabilityRange: [98, 100], statusOverride: 'won' },
-    { name: 'Closed Lost', probabilityRange: [0, 0], statusOverride: 'lost' },
+  leads: [
+    lead('vr01', 'FreshBrew Coffee', 'Instagram', 'Mumbai', 'Instagram Growth Package', 'New Inquiry', 'Arjun K.', '2026-06-18', 1, 5, 10, 'Send service deck'),
+    lead('vr02', 'UrbanFit Gym', 'LinkedIn', 'Delhi', 'YouTube Shorts Strategy', 'New Inquiry', 'Sneha P.', '2026-06-17', 2, 8, 10, 'Schedule intro call'),
+    lead('vr03', 'LuxeStyle Salon', 'Website', 'Bangalore', 'Instagram Growth Package', 'New Inquiry', 'Rahul M.', '2026-06-16', 3, 4, 5, 'Share case studies'),
+    lead('vr04', 'GreenLeaf Cafe', 'Referral', 'Chennai', 'Brand Reels Bundle', 'New Inquiry', 'Divya S.', '2026-06-18', 1, 6, 10, 'Send portfolio'),
+    lead('vr05', 'TechNova Labs', 'WhatsApp', 'Hyderabad', 'LinkedIn Video Strategy', 'New Inquiry', 'Arjun K.', '2026-06-15', 4, 12, 10, 'Qualify requirements'),
+    lead('vr06', 'AuraWellness Spa', 'Instagram', 'Pune', 'Instagram Growth Package', 'First Contact', 'Sneha P.', '2026-06-17', 2, 5, 20, 'Share content samples'),
+    lead('vr07', 'CloudKitchen Hub', 'LinkedIn', 'Mumbai', 'YouTube Shorts Strategy', 'First Contact', 'Rahul M.', '2026-06-14', 5, 10, 20, 'Send strategy brief'),
+    lead('vr08', 'Prestige Homes', 'Website', 'Delhi', 'Brand Reels Bundle', 'First Contact', 'Divya S.', '2026-06-10', 9, 15, 15, 'Re-engage — stalled'),
+    lead('vr09', 'PixelCraft Studio', 'Referral', 'Bangalore', 'TikTok Growth Plan', 'First Contact', 'Arjun K.', '2026-06-16', 3, 7, 20, 'Arrange demo call'),
+    lead('vr10', 'Bloom Boutique', 'Instagram', 'Chennai', 'Instagram Growth Package', 'Qualified', 'Sneha P.', '2026-06-16', 3, 4, 35, 'Prepare tailored proposal'),
+    lead('vr11', 'Metro Fitness', 'LinkedIn', 'Hyderabad', 'YouTube Shorts Strategy', 'Qualified', 'Rahul M.', '2026-06-15', 4, 8, 35, 'Schedule strategy session'),
+    lead('vr12', 'NexaWave Digital', 'Website', 'Pune', 'Influencer Collab Package', 'Qualified', 'Divya S.', '2026-06-11', 8, 20, 30, 'Revisit scope and budget'),
+    lead('vr13', 'Artisan Bakery', 'WhatsApp', 'Mumbai', 'Brand Reels Bundle', 'Qualified', 'Arjun K.', '2026-06-14', 5, 3, 35, 'Send content calendar sample'),
+    lead('vr14', 'VeloTech', 'Instagram', 'Delhi', 'TikTok Growth Plan', 'Demo Booked', 'Sneha P.', '2026-06-17', 2, 10, 30, 'Confirm demo time'),
+    lead('vr15', 'CityScape Realty', 'LinkedIn', 'Bangalore', 'Instagram Growth Package', 'Demo Booked', 'Rahul M.', '2026-06-16', 3, 12, 30, 'Prepare property reel samples'),
+    lead('vr16', 'PurePlay Sports', 'Referral', 'Chennai', 'YouTube Shorts Strategy', 'Demo Booked', 'Divya S.', '2026-06-14', 5, 15, 30, 'Create sample reel'),
+    lead('vr17', 'Summit Consulting', 'Website', 'Hyderabad', 'Influencer Collab Package', 'Demo Completed', 'Arjun K.', '2026-06-15', 4, 25, 45, 'Send trial content'),
+    lead('vr18', 'HealthFirst Clinic', 'WhatsApp', 'Pune', 'Instagram Growth Package', 'Demo Completed', 'Sneha P.', '2026-06-13', 6, 6, 40, 'Address compliance concerns'),
+    lead('vr19', 'RoyalCraft Jewelry', 'Instagram', 'Mumbai', 'Brand Reels Bundle', 'Demo Completed', 'Rahul M.', '2026-06-10', 9, 18, 40, 'Follow up — went quiet'),
+    lead('vr20', 'EcoHome Solutions', 'LinkedIn', 'Delhi', 'YouTube Shorts Strategy', 'Proposal Sent', 'Divya S.', '2026-06-16', 3, 8, 55, 'Follow up on proposal'),
+    lead('vr21', 'SparkDigital Co.', 'Website', 'Bangalore', 'Instagram Growth Package', 'Proposal Sent', 'Arjun K.', '2026-06-14', 5, 5, 50, 'Address pricing questions'),
+    lead('vr22', 'BluePeak Travel', 'Referral', 'Chennai', 'TikTok Growth Plan', 'Proposal Sent', 'Sneha P.', '2026-06-11', 8, 12, 50, 'Revise proposal scope'),
+    lead('vr23', 'FreshFields Organic', 'WhatsApp', 'Hyderabad', 'Brand Reels Bundle', 'Proposal Sent', 'Rahul M.', '2026-06-15', 4, 4, 55, 'Send content roadmap'),
+    lead('vr24', 'WavePoint Media', 'Instagram', 'Pune', 'Influencer Collab Package', 'Negotiation', 'Divya S.', '2026-06-16', 3, 30, 65, 'Finalize influencer list'),
+    lead('vr25', 'CoreBrand Studio', 'LinkedIn', 'Mumbai', 'YouTube Shorts Strategy', 'Negotiation', 'Arjun K.', '2026-06-12', 7, 14, 60, 'Counter on retainer terms'),
+    lead('vr26', 'AgilePath Inc.', 'Website', 'Delhi', 'Instagram Growth Package', 'Negotiation', 'Sneha P.', '2026-06-14', 5, 6, 65, 'Send final pricing'),
+    lead('vr27', 'Zenith Academy', 'Referral', 'Bangalore', 'Brand Reels Bundle', 'Closed Won', 'Rahul M.', '2026-06-05', 2, 8, 100, 'Begin content production'),
+    lead('vr28', 'Meridian Finance', 'LinkedIn', 'Chennai', 'YouTube Shorts Strategy', 'Closed Won', 'Divya S.', '2026-06-02', 1, 15, 100, 'Assign creative team'),
+    lead('vr29', 'CloudBurst Ltd.', 'WhatsApp', 'Hyderabad', 'Influencer Collab Package', 'Active Customer', 'Arjun K.', '2026-05-15', 3, 22, 100, 'Month 2 content review'),
+    lead('vr30', 'DataPulse AI', 'Instagram', 'Pune', 'Instagram Growth Package', 'Active Customer', 'Sneha P.', '2026-05-20', 2, 5, 100, 'Monthly analytics report'),
+    lead('vr31', 'NovaSoft Inc.', 'LinkedIn', 'Mumbai', 'Brand Reels Bundle', 'Closed Lost', 'Rahul M.', '2026-06-01', 5, 10, 0, 'Archive — went in-house'),
+    lead('vr32', 'Skyline Realty', 'Website', 'Delhi', 'YouTube Shorts Strategy', 'Closed Lost', 'Divya S.', '2026-05-28', 4, 8, 0, 'Archive — budget frozen'),
+    lead('vr33', 'PrimeSoft Corp.', 'Referral', 'Bangalore', 'TikTok Growth Plan', 'Closed Lost', 'Arjun K.', '2026-06-03', 3, 12, 0, 'Archive — chose competitor'),
+    lead('vr34', 'Tanvi Boutique', 'WhatsApp', 'Chennai', 'Instagram Growth Package', 'New Inquiry', 'Sneha P.', '2026-06-18', 1, 2, 10, 'Send starter package'),
+    lead('vr35', 'DawnTech Inc.', 'LinkedIn', 'Hyderabad', 'Influencer Collab Package', 'Qualified', 'Divya S.', '2026-06-13', 6, 28, 35, 'Deep-dive on influencer goals'),
   ],
-  owners: ['Arjun K.', 'Sneha P.', 'Rahul M.', 'Divya S.'],
-  ownerTeam: 'ViralReels Sales',
-  locations: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Jaipur', 'Goa'],
-  requirements: [
-    'Instagram Growth Package', 'YouTube Shorts Strategy', 'Influencer Collab Package',
-    'Brand Reels Bundle', 'TikTok Growth Plan', 'Social Media Audit + Strategy',
-    'Content Calendar Management', 'Viral Video Production - 30 reels/month',
-    'Influencer Marketing Campaign', 'UGC Content Creation Package',
-    'Reels + Stories daily management', 'LinkedIn Video Strategy',
-  ],
-  sources: ['Instagram', 'WhatsApp', 'Referral', 'Website', 'LinkedIn', 'Google Ads'],
-  valueRange: [15000, 300000],
-  nextActions: [
-    'Share portfolio deck', 'Schedule strategy call', 'Send pricing packages', 'Demo past campaigns',
-    'Share case study results', 'Negotiate retainer terms', 'Onboard to dashboard', 'Start content audit',
-  ],
-  clientNames: VIRALREELS_NAMES,
-  emailDomain: 'brand.social',
-  phonePrefix: '+91-',
 };
 
-// ─── Generate all template data ─────────────────────────────
+// ─── Exports ─────────────────────────────────────────────────
 
-const CONFIGS: TemplateConfig[] = [
-  GENERIC_CONFIG, SAAS_CONFIG, AGENCY_CONFIG, INTERIOR_CONFIG,
-  HEALTHCARE_CONFIG, REALESTATE_CONFIG, EDUCATION_CONFIG,
-  EVENTS_CONFIG, RETAIL_CONFIG, VIRALREELS_CONFIG,
+export const SAMPLE_TEMPLATES: SampleTemplate[] = [
+  generic, saas, agency, interior, healthcare, realestate, education, events, retail, viralreels,
 ];
 
-export const SAMPLE_TEMPLATES: SampleTemplate[] = CONFIGS.map(cfg => ({
-  id: cfg.id,
-  name: cfg.name,
-  description: cfg.description,
-  icon: cfg.icon,
-  leads: generateLeads(cfg, 35),
-}));
-
 export function getSampleLeads(templateId: string): UniversalLead[] {
-  const template = SAMPLE_TEMPLATES.find(t => t.id === templateId);
-  return template?.leads ?? [];
+  const t = SAMPLE_TEMPLATES.find(t => t.id === templateId);
+  return t ? t.leads : [];
 }
