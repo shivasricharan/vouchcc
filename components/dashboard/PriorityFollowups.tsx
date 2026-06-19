@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
-import { getStageColor } from '@/lib/leadTypes';
 
 export default function PriorityFollowups() {
   const { leads } = useDashboard();
@@ -14,7 +13,7 @@ export default function PriorityFollowups() {
         !['Lost', 'Completed', 'Closed Won', 'Closed Lost', 'Active Customer', 'Enrolled', 'Registered'].some(s => l.stage.includes(s))
       )
       .sort((a, b) => b.probability - a.probability || b.value - a.value || b.daysInStage - a.daysInStage)
-      .slice(0, 10)
+      .slice(0, 5)
       .map(l => {
         let issue = '';
         let action = '';
@@ -44,56 +43,35 @@ export default function PriorityFollowups() {
   }
 
   return (
-    <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-th-border">
+    <div>
+      <div className="flex items-center gap-3 mb-4">
         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-        <div>
-          <span className="text-th-heading font-semibold text-sm">Priority Follow-ups</span>
-          <span className="text-th-muted text-xs ml-2">Leads that need immediate attention</span>
-        </div>
-        <span className="ml-auto bg-amber-500/15 text-amber-500 text-xs font-bold px-2 py-0.5 rounded-full">
-          {priority.length} leads
+        <h2 className="text-th-heading font-bold text-lg">Priority Follow-ups</h2>
+        <span className="bg-amber-500/15 text-amber-500 text-xs font-bold px-2 py-0.5 rounded-full">
+          {priority.length}
         </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+      <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-th-border bg-th-hover">
-              {['Lead Name', 'Source', 'Stage', 'Intent', 'Last Contacted', 'Issue', 'Recommended Action'].map(col => (
-                <th key={col} className="px-4 py-2.5 text-left text-th-muted font-semibold text-[10px] uppercase tracking-wide whitespace-nowrap">{col}</th>
+              {['Lead', 'Stage', 'Issue', 'Next Action'].map(col => (
+                <th key={col} className="px-4 py-3 text-left text-th-muted font-semibold text-xs uppercase tracking-wide">{col}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {priority.map((lead, i) => {
-              const intentLabel = lead.probability >= 80 ? 'Very High' : lead.probability >= 60 ? 'High' : lead.probability >= 40 ? 'Medium' : 'Low';
-              const intentColor = lead.probability >= 80 ? 'text-green-500' : lead.probability >= 60 ? 'text-blue-500' : lead.probability >= 40 ? 'text-amber-500' : 'text-th-muted';
-              return (
-                <tr key={lead.id} className={`border-b border-th-border hover:bg-th-hover ${i % 2 === 1 ? 'bg-th-hover' : ''}`}>
-                  <td className="px-4 py-2.5">
-                    <div className="text-th-heading font-medium whitespace-nowrap">{lead.client}</div>
-                  </td>
-                  <td className="px-4 py-2.5 text-th-body whitespace-nowrap">{lead.source}</td>
-                  <td className="px-4 py-2.5 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-th-body">
-                      <span className={`w-1.5 h-1.5 rounded-full ${getStageColor(lead.stage, i)}`} />
-                      {lead.stage}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 whitespace-nowrap">
-                    <span className={`text-[10px] font-bold ${intentColor}`}>{intentLabel}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-th-muted whitespace-nowrap">{lead.lastContacted}</td>
-                  <td className="px-4 py-2.5">
-                    <span className="text-orange-500 text-[10px] font-medium">{lead.issue}</span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className="text-th-body text-[10px] max-w-[200px] truncate block">{lead.recommendedAction}</span>
-                  </td>
-                </tr>
-              );
-            })}
+            {priority.map((lead, i) => (
+              <tr key={lead.id} className={`border-b border-th-border last:border-0 ${i % 2 === 1 ? 'bg-th-hover/50' : ''}`}>
+                <td className="px-4 py-3 text-th-heading font-medium">{lead.client}</td>
+                <td className="px-4 py-3 text-th-body">{lead.stage}</td>
+                <td className="px-4 py-3">
+                  <span className="text-orange-500 text-xs font-medium">{lead.issue}</span>
+                </td>
+                <td className="px-4 py-3 text-th-body text-xs">{lead.recommendedAction}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

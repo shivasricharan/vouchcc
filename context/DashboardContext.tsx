@@ -5,7 +5,7 @@ import { computeStats } from '@/lib/computeStats';
 import { detectTemplate } from '@/lib/fieldMapping';
 import type { UniversalLead, ComputedStats, TemplateId } from '@/lib/leadTypes';
 
-export type ViewId = 'dashboard' | 'upload' | 'leads' | 'funnel' | 'teams' | 'insights' | 'settings' | 'guide';
+export type ViewId = 'dashboard' | 'upload' | 'guide';
 
 interface DashboardState {
   view: ViewId;
