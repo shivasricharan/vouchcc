@@ -259,19 +259,19 @@ export default function GuideView() {
         <div>
           <button
             onClick={() => setView('dashboard')}
-            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-xs mb-3 transition-colors"
+            className="flex items-center gap-1.5 text-th-muted hover:text-th-body text-xs mb-3 transition-colors"
           >
             ‹ Back to Dashboard
           </button>
-          <h1 className="text-white font-bold text-2xl leading-tight">How to Read and Use This Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-2 leading-relaxed max-w-xl">
+          <h1 className="text-th-heading font-bold text-2xl leading-tight">How to Read and Use This Dashboard</h1>
+          <p className="text-th-body text-sm mt-2 leading-relaxed max-w-xl">
             This dashboard is not just for seeing leads. It is for understanding where revenue is getting stuck,
             which leads need action, which team members are overloaded, and what decisions to take daily.
           </p>
         </div>
         <button
           onClick={downloadGuide}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shrink-0"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-th-heading text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shrink-0"
         >
           <span>↓</span> Download Guide
         </button>
@@ -282,8 +282,8 @@ export default function GuideView() {
         <div className="flex items-start gap-3">
           <span className="text-2xl shrink-0">💡</span>
           <div>
-            <div className="text-white font-semibold text-sm mb-1.5">Why this dashboard exists</div>
-            <p className="text-slate-300 text-sm leading-relaxed">
+            <div className="text-th-heading font-semibold text-sm mb-1.5">Why this dashboard exists</div>
+            <p className="text-th-body text-sm leading-relaxed">
               Most businesses lose revenue not because they lack leads — but because leads get stuck, go silent,
               or are never properly followed up. This dashboard gives you and your team a single place to see what
               is happening, who owns what, and what action to take right now.
@@ -294,24 +294,24 @@ export default function GuideView() {
 
       {/* Metric sections */}
       <div className="mb-8">
-        <h2 className="text-white font-bold text-base mb-1">What Each Metric Means</h2>
-        <p className="text-slate-500 text-xs mb-4">How to read every number on your dashboard</p>
+        <h2 className="text-th-heading font-bold text-base mb-1">What Each Metric Means</h2>
+        <p className="text-th-muted text-xs mb-4">How to read every number on your dashboard</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {SECTIONS.map((s) => (
-            <div key={s.id} className="bg-[#0d1530] border border-white/6 rounded-xl p-4 hover:border-white/12 transition-colors">
+            <div key={s.id} className="bg-th-surface border border-th-border rounded-xl p-4 hover:border-white/12 transition-colors">
               <div className="flex items-center gap-2.5 mb-3">
                 <span className="text-xl">{s.icon}</span>
-                <div className="text-white font-semibold text-sm">{s.title}</div>
+                <div className="text-th-heading font-semibold text-sm">{s.title}</div>
               </div>
               <div className="space-y-2">
                 <div>
-                  <span className="text-slate-600 text-[10px] uppercase tracking-wide font-semibold">Meaning</span>
-                  <p className="text-slate-300 text-xs mt-0.5 leading-relaxed">{s.meaning}</p>
+                  <span className="text-th-faint text-[10px] uppercase tracking-wide font-semibold">Meaning</span>
+                  <p className="text-th-body text-xs mt-0.5 leading-relaxed">{s.meaning}</p>
                 </div>
                 <div>
-                  <span className="text-slate-600 text-[10px] uppercase tracking-wide font-semibold">How to interpret</span>
-                  <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{s.interpret}</p>
+                  <span className="text-th-faint text-[10px] uppercase tracking-wide font-semibold">How to interpret</span>
+                  <p className="text-th-body text-xs mt-0.5 leading-relaxed">{s.interpret}</p>
                 </div>
                 <div>
                   <span className="text-blue-500 text-[10px] uppercase tracking-wide font-semibold">What to do</span>
@@ -325,10 +325,10 @@ export default function GuideView() {
 
       {/* Daily routine */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-        <div className="bg-[#0d1530] border border-amber-500/20 rounded-xl p-5">
+        <div className="bg-th-surface border border-amber-500/20 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">☀️</span>
-            <div className="text-white font-semibold text-sm">Every Morning</div>
+            <div className="text-th-heading font-semibold text-sm">Every Morning</div>
           </div>
           <ol className="space-y-2">
             {[
@@ -340,16 +340,16 @@ export default function GuideView() {
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2.5">
                 <span className="text-amber-500 font-bold text-xs shrink-0 mt-0.5">{i + 1}.</span>
-                <span className="text-slate-300 text-xs leading-relaxed">{item}</span>
+                <span className="text-th-body text-xs leading-relaxed">{item}</span>
               </li>
             ))}
           </ol>
         </div>
 
-        <div className="bg-[#0d1530] border border-violet-500/20 rounded-xl p-5">
+        <div className="bg-th-surface border border-violet-500/20 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📅</span>
-            <div className="text-white font-semibold text-sm">Every Week</div>
+            <div className="text-th-heading font-semibold text-sm">Every Week</div>
           </div>
           <ol className="space-y-2">
             {[
@@ -361,7 +361,7 @@ export default function GuideView() {
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2.5">
                 <span className="text-violet-400 font-bold text-xs shrink-0 mt-0.5">{i + 1}.</span>
-                <span className="text-slate-300 text-xs leading-relaxed">{item}</span>
+                <span className="text-th-body text-xs leading-relaxed">{item}</span>
               </li>
             ))}
           </ol>
@@ -369,28 +369,28 @@ export default function GuideView() {
       </div>
 
       {/* Core rule */}
-      <div className="bg-[#0d1530] border border-white/10 rounded-xl p-6 mb-8">
-        <div className="text-slate-500 text-[10px] uppercase tracking-widest font-semibold mb-3">The core business rule</div>
-        <blockquote className="text-white text-lg font-semibold leading-snug border-l-2 border-blue-500 pl-4">
+      <div className="bg-th-surface border border-th-border rounded-xl p-6 mb-8">
+        <div className="text-th-muted text-[10px] uppercase tracking-widest font-semibold mb-3">The core business rule</div>
+        <blockquote className="text-th-heading text-lg font-semibold leading-snug border-l-2 border-blue-500 pl-4">
           If leads are coming but revenue is not growing, the problem is usually not lead generation.
         </blockquote>
-        <p className="text-slate-400 text-sm mt-3 leading-relaxed pl-4 border-l-2 border-white/10">
+        <p className="text-th-body text-sm mt-3 leading-relaxed pl-4 border-l-2 border-th-border">
           The problem is lead movement, follow-up discipline, ownership, and visibility.
           This dashboard exists to make all four visible — and fixable.
         </p>
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pt-4 border-t border-white/5">
+      <div className="flex items-center justify-between flex-wrap gap-3 pt-4 border-t border-th-border">
         <button
           onClick={() => setView('dashboard')}
-          className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-th-border text-th-body text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
         >
           ‹ Back to Dashboard
         </button>
         <button
           onClick={downloadGuide}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-th-heading text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
         >
           <span>↓</span> Download Guide
         </button>

@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -21,13 +22,23 @@ const config: Config = {
           light: '#3b82f6',
         },
         gold: '#f59e0b',
+        'th-page':     'var(--th-page)',
+        'th-surface':  'var(--th-surface)',
+        'th-elevated': 'var(--th-elevated)',
+        'th-heading':  'var(--th-heading)',
+        'th-body':     'var(--th-body)',
+        'th-muted':    'var(--th-muted)',
+        'th-faint':    'var(--th-faint)',
+        'th-border':   'var(--th-border)',
+        'th-hover':    'var(--th-hover)',
+        'th-input':    'var(--th-input)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
 };
 
 export default config;

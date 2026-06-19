@@ -18,16 +18,17 @@ import TeamsView from './views/TeamsView';
 import InsightsView from './views/InsightsView';
 import SettingsView from './views/SettingsView';
 import GuideView from './views/GuideView';
+import UploadCSVView from './views/UploadCSVView';
 
 function DashboardContent() {
   const { view, showUpload } = useDashboard();
 
   return (
-    <div className="flex h-screen bg-[#070c18] overflow-hidden">
+    <div className="flex h-screen bg-th-page overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <DashHeader />
-        <main className="flex-1 overflow-y-auto bg-[#070c18]">
+        <main className="flex-1 overflow-y-auto bg-th-page">
           {view === 'dashboard' && (
             <div className="p-5 space-y-5">
               <KPICards />
@@ -42,11 +43,12 @@ function DashboardContent() {
                 <div className="xl:col-span-1"><RecentActivity /></div>
               </div>
               <LeadTable />
-              <div className="text-center py-3 border-t border-white/5">
-                <span className="text-slate-600 text-xs">Powered by Vouch</span>
+              <div className="text-center py-3 border-t border-th-border">
+                <span className="text-th-faint text-xs">Powered by Vouch</span>
               </div>
             </div>
           )}
+          {view === 'upload'   && <UploadCSVView />}
           {view === 'leads'    && <LeadsView />}
           {view === 'funnel'   && <FunnelView />}
           {view === 'teams'    && <TeamsView />}
@@ -55,7 +57,7 @@ function DashboardContent() {
           {view === 'guide'    && <GuideView />}
         </main>
       </div>
-      {showUpload && <UploadModal />}
+      {showUpload && view !== 'upload' && <UploadModal />}
     </div>
   );
 }

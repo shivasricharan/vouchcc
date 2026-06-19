@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
+import { Lightbulb } from 'lucide-react';
 
 const typeStyles: Record<string, string> = {
   critical: 'border-red-500/20 bg-red-500/5',
@@ -15,99 +16,68 @@ export default function AIInsights() {
 
   const insights = useMemo(() => {
     const topSource = Object.entries(stats.sourceCounts).sort((a, b) => b[1] - a[1])[0];
-    const topOwner = Object.entries(stats.teamCounts)
-      .filter(([k]) => k !== 'Unassigned')
-      .sort((a, b) => b[1] - a[1])[0];
+    const topOwner = Object.entries(stats.teamCounts).filter(([k]) => k !== 'Unassigned').sort((a, b) => b[1] - a[1])[0];
     const unassigned = stats.teamCounts['Unassigned'] || 0;
-    const negotiationStuck = leads.filter((l) => l.stage === 'Negotiation' && l.daysInStage >= 7).length;
-    const referralLeads = leads.filter((l) => l.source === 'Referral');
-    const referralContacted = referralLeads.filter((l) => l.daysInStage <= 2).length;
-    const completedReferral = leads.filter((l) => l.stage === 'Completed' && l.source === 'Referral').length;
+
+    const stuckByStage: Record<string, number> = {};
+    for (const l of leads) {
+      if (l.daysInStage >= 7 && !['Lost', 'Completed', 'Closed Won', 'Closed Lost'].some(s => l.stage.includes(s))) {
+        stuckByStage[l.stage] = (stuckByStage[l.stage] || 0) + 1;
+      }
+    }
+    const biggestBottleneck = Object.entries(stuckByStage).sort((a, b) => b[1] - a[1])[0];
 
     const list = [];
 
-    if (negotiationStuck >= 2) {
-      list.push({
-        type: 'warning', icon: '⚠️',
-        title: 'Negotiation stage is your biggest bottleneck',
-        body: `${negotiationStuck} of ${stats.stageCounts['Negotiation'] || 0} leads in Negotiation have been stuck for 7+ days. Total at-risk value: ₹${stats.atRiskValue}L. Direct founder conversations could unlock these.`,
-      });
+    if (biggestBottleneck && biggestBottleneck[1] >= 2) {
+      list.push({ type: 'warning', title: `${biggestBottleneck[0]} is your biggest bottleneck`, body: `${biggestBottleneck[1]} leads stuck ≥7 days. At-risk value: ₹${stats.atRiskValue}L. Direct action could unlock these.` });
     }
 
-    if (topSource && topSource[1] >= 5) {
-      const contactRate = Math.round((referralContacted / Math.max(referralLeads.length, 1)) * 100);
-      list.push({
-        type: 'critical', icon: '🔴',
-        title: `${topSource[0]} is your top acquisition channel (${Math.round((topSource[1] / stats.total) * 100)}%)`,
-        body: `${topSource[1]} leads came via ${topSource[0]}. ${contactRate < 50 ? `Only ${contactRate}% contacted within 48 hrs — faster first response directly increases revenue.` : 'Good contact rate — keep following up promptly.'}`,
-      });
+    if (topSource && topSource[1] >= 3) {
+      const pct = Math.round((topSource[1] / stats.total) * 100);
+      list.push({ type: 'critical', title: `${topSource[0]} is your top source (${pct}%)`, body: `${topSource[1]} leads via ${topSource[0]}. Invest more in high-converting channels and reduce response time for inbound leads.` });
     }
 
     if (unassigned > 0) {
-      list.push({
-        type: 'insight', icon: '📈',
-        title: `${unassigned} leads are unassigned`,
-        body: `${unassigned} leads have no owner. Every day of delay drops response quality for high-intent leads. Assign immediately.`,
-      });
+      list.push({ type: 'insight', title: `${unassigned} leads are unassigned`, body: `Unassigned leads go cold fast. Assign owners immediately to prevent revenue leaks.` });
     }
 
-    if (topOwner && topOwner[1] >= 15) {
-      list.push({
-        type: 'positive', icon: '✅',
-        title: `${topOwner[0]} is handling disproportionate load`,
-        body: `${topOwner[0]} is assigned ${topOwner[1]}+ active leads. Consider distributing high-value Negotiation support to reduce single-point risk.`,
-      });
+    if (topOwner && topOwner[1] >= 10) {
+      list.push({ type: 'positive', title: `${topOwner[0]} has highest load (${topOwner[1]} leads)`, body: `Consider redistributing to balance team workload and improve follow-up velocity.` });
     }
 
-    const stuckQuotations = leads.filter((l) => l.stage === 'Quotation Sent' && l.daysInStage >= 5);
-    if (stuckQuotations.length >= 3) {
-      const quotationValue = stuckQuotations.reduce((s, l) => s + l.value, 0);
-      list.push({
-        type: 'insight', icon: '💡',
-        title: `${stuckQuotations.length} quotations sent with no response in >5 days`,
-        body: `These represent ₹${quotationValue}L+ in pending decisions. A structured follow-up sequence (call + revised quote if needed) within 48 hours could move several to Negotiation.`,
-      });
+    const stuckQuotations = leads.filter(l => (l.stage.toLowerCase().includes('quotation') || l.stage.toLowerCase().includes('quote')) && l.daysInStage >= 5);
+    if (stuckQuotations.length >= 2) {
+      const qVal = stuckQuotations.reduce((s, l) => s + l.value, 0);
+      list.push({ type: 'insight', title: `${stuckQuotations.length} quotes with no response in >5 days`, body: `₹${qVal}L pending. Follow up with a call + revised quote within 48 hours.` });
     }
 
-    if (completedReferral >= 2) {
-      list.push({
-        type: 'positive', icon: '🏆',
-        title: `${completedReferral} completed projects — all via Referral`,
-        body: `Requesting testimonials from completed clients now can seed 5–8 new high-quality leads in the next 30 days.`,
-      });
+    if (stats.stuckCount > 0) {
+      list.push({ type: 'warning', title: `${stats.stuckCount} leads need immediate action`, body: `Review the Stuck Leads table daily. Each stuck lead should have a next action assigned before end of day.` });
     }
 
     if (list.length === 0) {
-      list.push({
-        type: 'insight', icon: '📊',
-        title: 'Upload your data for personalised insights',
-        body: 'Click "Upload Data" to load your own lead sheet. Vouch will analyse patterns and show actionable insights specific to your pipeline.',
-      });
+      list.push({ type: 'insight', title: 'Upload your data for personalised insights', body: 'Click "Upload CSV" to load your lead data. Vouch will analyse patterns and show actionable recommendations.' });
     }
 
     return list;
   }, [stats, leads]);
 
   return (
-    <div className="bg-[#0d1530] border border-white/6 rounded-xl p-4">
+    <div className="bg-th-surface border border-th-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-base">🧠</span>
+        <Lightbulb size={16} className="text-amber-500" />
         <div>
-          <div className="text-white font-semibold text-sm">Pipeline Insights</div>
-          <div className="text-slate-500 text-xs">Pattern analysis across {stats.total} leads</div>
+          <div className="text-th-heading font-semibold text-sm">Smart Insights</div>
+          <div className="text-th-muted text-xs">Pattern analysis across {stats.total} leads</div>
         </div>
       </div>
 
       <div className="space-y-2.5">
         {insights.map((insight, i) => (
           <div key={i} className={`border rounded-lg px-3.5 py-2.5 ${typeStyles[insight.type]}`}>
-            <div className="flex items-start gap-2.5">
-              <span className="text-sm shrink-0 mt-0.5">{insight.icon}</span>
-              <div>
-                <div className="text-white text-xs font-semibold mb-1">{insight.title}</div>
-                <div className="text-slate-400 text-[11px] leading-relaxed">{insight.body}</div>
-              </div>
-            </div>
+            <div className="text-th-heading text-xs font-semibold mb-1">{insight.title}</div>
+            <div className="text-th-body text-[11px] leading-relaxed">{insight.body}</div>
           </div>
         ))}
       </div>

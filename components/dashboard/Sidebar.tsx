@@ -3,24 +3,26 @@
 import { useState } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
 import type { ViewId } from '@/context/DashboardContext';
+import { LayoutDashboard, Upload, Users, GitBranch, UserCircle, Lightbulb, Settings, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const NAV_ITEMS: { label: string; icon: string; id: ViewId }[] = [
-  { label: 'Dashboard', icon: '◈', id: 'dashboard' },
-  { label: 'Leads',     icon: '◎', id: 'leads' },
-  { label: 'Funnel',    icon: '◇', id: 'funnel' },
-  { label: 'Teams',     icon: '◯', id: 'teams' },
-  { label: 'Insights',  icon: '◆', id: 'insights' },
-  { label: 'Settings',  icon: '⚙', id: 'settings' },
-  { label: 'Guide',     icon: '?', id: 'guide' },
+const NAV_ITEMS: { label: string; icon: typeof LayoutDashboard; id: ViewId }[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
+  { label: 'Upload CSV', icon: Upload,          id: 'upload' },
+  { label: 'Leads',      icon: Users,           id: 'leads' },
+  { label: 'Funnel',     icon: GitBranch,       id: 'funnel' },
+  { label: 'Teams',      icon: UserCircle,      id: 'teams' },
+  { label: 'Insights',   icon: Lightbulb,       id: 'insights' },
+  { label: 'Settings',   icon: Settings,        id: 'settings' },
+  { label: 'Guide',      icon: BookOpen,        id: 'guide' },
 ];
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
-  const { view, setView, dataMode, fileName, uploadedAt } = useDashboard();
+  const { view, setView, dataMode, fileName } = useDashboard();
 
   const badgeLabel = dataMode === 'live'
     ? `Live: ${fileName ? (fileName.length > 18 ? fileName.slice(0, 18) + '…' : fileName) : 'uploaded'}`
-    : 'Sample data — June 2026';
+    : 'Sample Demo Data';
 
   return (
     <>
@@ -32,26 +34,25 @@ export default function Sidebar() {
         className={`
           ${open ? 'w-56' : 'w-14'}
           hidden lg:flex flex-col flex-shrink-0 h-screen
-          bg-[#0a0f1e] border-r border-white/6
+          bg-th-elevated border-r border-th-border
           transition-all duration-200
         `}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-white/6 shrink-0">
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-th-border shrink-0">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
             <span className="text-white font-black text-xs">V</span>
           </div>
           {open && (
             <div className="min-w-0">
-              <div className="text-white font-bold text-sm leading-tight truncate">DzineHome</div>
-              <div className="text-slate-500 text-[10px] truncate">Command Center</div>
+              <div className="text-th-heading font-bold text-sm leading-tight truncate">Vouch</div>
+              <div className="text-th-muted text-[10px] truncate">Command Center</div>
             </div>
           )}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
             const isActive = view === item.id;
             return (
               <button
@@ -61,18 +62,17 @@ export default function Sidebar() {
                   w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left
                   transition-colors text-sm
                   ${isActive
-                    ? 'bg-blue-600/15 text-blue-400 font-semibold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}
+                    ? 'bg-blue-600/15 text-blue-500 font-semibold'
+                    : 'text-th-body hover:text-th-heading hover:bg-th-hover'}
                 `}
               >
-                <span className="text-base shrink-0 w-5 text-center">{item.icon}</span>
+                <Icon size={16} className="shrink-0" />
                 {open && <span className="truncate">{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
-        {/* Data badge */}
         <div className="px-2 pb-4 shrink-0">
           {open ? (
             <div className={`border rounded-lg px-3 py-2 text-center ${
@@ -80,10 +80,10 @@ export default function Sidebar() {
                 ? 'bg-green-500/10 border-green-500/20'
                 : 'bg-amber-500/10 border-amber-500/20'
             }`}>
-              <div className={`text-[10px] font-bold uppercase tracking-wide ${dataMode === 'live' ? 'text-green-400' : 'text-amber-400'}`}>
+              <div className={`text-[10px] font-bold uppercase tracking-wide ${dataMode === 'live' ? 'text-green-500' : 'text-amber-500'}`}>
                 {dataMode === 'live' ? 'Live Data' : 'Demo Mode'}
               </div>
-              <div className="text-slate-500 text-[10px] mt-0.5 truncate">{badgeLabel}</div>
+              <div className="text-th-muted text-[10px] mt-0.5 truncate">{badgeLabel}</div>
             </div>
           ) : (
             <div className="flex justify-center">
@@ -92,13 +92,11 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Collapse toggle */}
         <button
           onClick={() => setOpen(!open)}
-          className="h-10 border-t border-white/6 flex items-center justify-center text-slate-600 hover:text-slate-300 transition-colors text-xs shrink-0"
-          aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+          className="h-10 border-t border-th-border flex items-center justify-center text-th-muted hover:text-th-heading transition-colors text-xs shrink-0"
         >
-          {open ? '‹ collapse' : '›'}
+          {open ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>
       </aside>
     </>

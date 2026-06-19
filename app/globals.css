@@ -5,8 +5,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --background: #0a0f1e;
-  --foreground: #f1f5f9;
+  --th-page: #f8fafc;
+  --th-surface: #ffffff;
+  --th-elevated: #f1f5f9;
+  --th-heading: #0f172a;
+  --th-body: #475569;
+  --th-muted: #94a3b8;
+  --th-faint: #cbd5e1;
+  --th-border: #e2e8f0;
+  --th-hover: #f1f5f9;
+  --th-input: #f1f5f9;
+}
+
+html.dark {
+  --th-page: #070c18;
+  --th-surface: #0d1530;
+  --th-elevated: #0a0f1e;
+  --th-heading: #f1f5f9;
+  --th-body: #94a3b8;
+  --th-muted: #64748b;
+  --th-faint: #334155;
+  --th-border: rgba(255, 255, 255, 0.06);
+  --th-hover: rgba(255, 255, 255, 0.03);
+  --th-input: rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -18,8 +39,8 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--th-page);
+  color: var(--th-body);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
