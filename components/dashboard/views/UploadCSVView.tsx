@@ -28,7 +28,6 @@ const TEMPLATE_CARDS: TemplateCard[] = [
   { id: 'education', templateId: 'education', name: 'Coaching / Education', description: 'Student enrollment', icon: '🎓' },
   { id: 'events', templateId: 'events', name: 'Events / Exhibitions', description: 'Event booking pipeline', icon: '🎪' },
   { id: 'retail', templateId: 'retail', name: 'Retail / Local Business', description: 'Local business leads', icon: '🛍️' },
-  { id: 'viralreels', templateId: 'viralreels', name: 'ViralReels Sample', description: 'Social media agency', icon: '🎬' },
 ];
 
 export default function UploadCSVView() {
