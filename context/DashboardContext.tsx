@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useMemo, useCallback, useEffect, type ReactNode } from 'react';
-import { leads as demoLeads } from '@/data/dzinehome';
 import { computeStats } from '@/lib/computeStats';
 import { detectTemplate } from '@/lib/fieldMapping';
 import type { UniversalLead, ComputedStats, TemplateId } from '@/lib/leadTypes';
@@ -17,6 +16,7 @@ interface DashboardState {
   fileName?: string;
   uploadedAt?: Date;
   loadLiveData: (rows: UniversalLead[], fileName: string, confidence: number) => void;
+  loadSampleData: (leads: UniversalLead[], templateName: string, templateId: TemplateId) => void;
   loadDemoData: () => void;
   showUpload: boolean;
   setShowUpload: (v: boolean) => void;
@@ -28,6 +28,7 @@ interface DashboardState {
   mappedFields: number;
   autoFilledFields: number;
   detectedColumns: number;
+  missingFieldsWarning: string;
 }
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -38,29 +39,19 @@ export function useDashboard(): DashboardState {
   return ctx;
 }
 
-const DEMO_LEADS: UniversalLead[] = (demoLeads as unknown as UniversalLead[]).map(l => ({
-  ...l,
-  phone: l.phone ?? '—',
-  email: l.email ?? '—',
-  status: l.status ?? 'active',
-  ownerTeam: l.ownerTeam ?? '—',
-  createdAt: l.createdAt ?? '—',
-  daysSinceUpdate: l.daysSinceUpdate ?? (l as unknown as UniversalLead).daysInStage ?? 0,
-  probability: l.probability ?? 50,
-}));
-
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [view, setView] = useState<ViewId>('dashboard');
-  const [leads, setLeads] = useState<UniversalLead[]>(DEMO_LEADS);
+  const [view, setView] = useState<ViewId>('upload');
+  const [leads, setLeads] = useState<UniversalLead[]>([]);
   const [dataMode, setDataMode] = useState<'demo' | 'live'>('demo');
   const [fileName, setFileName] = useState<string | undefined>();
   const [uploadedAt, setUploadedAt] = useState<Date | undefined>();
   const [showUpload, setShowUpload] = useState(false);
-  const [templateId, setTemplateId] = useState<TemplateId>('interior');
+  const [templateId, setTemplateId] = useState<TemplateId>('auto');
   const [mappingConfidence, setMappingConfidence] = useState(100);
   const [mappedFields, setMappedFields] = useState(0);
   const [autoFilledFields, setAutoFilledFields] = useState(0);
   const [detectedColumns, setDetectedColumns] = useState(0);
+  const [missingFieldsWarning, setMissingFieldsWarning] = useState('');
 
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
@@ -91,21 +82,42 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setUploadedAt(new Date());
     setShowUpload(false);
     setMappingConfidence(confidence);
+    setView('dashboard');
+
+    const hasEmptyFields = rows.some(r => r.client === `Lead 1` || r.stage === 'New Inquiry');
+    if (confidence < 70 || hasEmptyFields) {
+      setMissingFieldsWarning('Some fields were missing, so Vouch estimated insights from available columns.');
+    } else {
+      setMissingFieldsWarning('');
+    }
 
     const detected = detectTemplate(rows);
     setTemplateId(detected);
   }, []);
 
+  const loadSampleData = useCallback((sampleLeads: UniversalLead[], templateName: string, tid: TemplateId) => {
+    setLeads(sampleLeads);
+    setDataMode('demo');
+    setFileName(templateName);
+    setUploadedAt(undefined);
+    setTemplateId(tid);
+    setMappingConfidence(100);
+    setMissingFieldsWarning('');
+    setView('dashboard');
+  }, []);
+
   const loadDemoData = useCallback(() => {
-    setLeads(DEMO_LEADS);
+    setLeads([]);
     setDataMode('demo');
     setFileName(undefined);
     setUploadedAt(undefined);
-    setTemplateId('interior');
+    setTemplateId('auto');
     setMappingConfidence(100);
     setMappedFields(0);
     setAutoFilledFields(0);
     setDetectedColumns(0);
+    setMissingFieldsWarning('');
+    setView('upload');
   }, []);
 
   return (
@@ -113,11 +125,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       view, setView,
       leads, stats,
       dataMode, fileName, uploadedAt,
-      loadLiveData, loadDemoData,
+      loadLiveData, loadSampleData, loadDemoData,
       showUpload, setShowUpload,
       templateId, setTemplateId,
       theme, toggleTheme,
       mappingConfidence, mappedFields, autoFilledFields, detectedColumns,
+      missingFieldsWarning,
     }}>
       {children}
     </DashboardContext.Provider>

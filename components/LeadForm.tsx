@@ -43,7 +43,7 @@ export default function LeadForm() {
 
     const payload = {
       ...formData,
-      sourcePage: 'VouchCC Website',
+      sourcePage: 'Vouch Website',
     };
 
     try {

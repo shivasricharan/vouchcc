@@ -89,12 +89,10 @@ export default function UploadModal() {
   function resetToDemo() {
     loadDemoData();
     setShowUpload(false);
-    setView('dashboard');
   }
 
   function close() {
     setShowUpload(false);
-    setView('dashboard');
   }
 
   const mappedCount = Object.values(colMap).filter(Boolean).length;
@@ -138,7 +136,7 @@ export default function UploadModal() {
               </div>
 
               <button onClick={resetToDemo} className="w-full py-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-sm font-semibold hover:bg-amber-500/20 transition-colors">
-                Load Demo Data (Interior Design — 100 leads)
+                Load Sample Data
               </button>
 
               <p className="text-th-faint text-[10px] text-center">

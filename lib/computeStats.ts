@@ -76,6 +76,8 @@ export function computeStats(leads: UniversalLead[], templateId: TemplateId = 'a
 
   const recentActivity = buildRecentActivity(leads, templateId);
 
+  const hasValues = leads.some(l => l.value > 0);
+
   return {
     total: leads.length,
     activeFunnelCount,
@@ -90,6 +92,7 @@ export function computeStats(leads: UniversalLead[], templateId: TemplateId = 'a
     followUpCount,
     atRiskValue,
     mappingConfidence: 0,
+    hasValues,
   };
 }
 

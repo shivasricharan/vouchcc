@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vouch Command Center — Know What Happens Between Inquiry and Conversion',
-  description: 'Upload any lead, sales, or customer journey CSV and turn it into a clean founder dashboard with funnel analytics, stuck leads, team workload, and smart insights.',
+  title: 'Vouch Insights | Revenue Leak Analysis',
+  description: 'Upload a CSV or explore sample business data to find revenue leaks, stuck leads, missed follow-ups, and conversion opportunities.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

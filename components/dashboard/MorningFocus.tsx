@@ -2,24 +2,31 @@
 
 import { useMemo } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
-import { RotateCcw, FileText, Handshake, MapPin, Wrench, AlertTriangle } from 'lucide-react';
+import { RotateCcw, FileText, Handshake, Target, AlertTriangle, Users } from 'lucide-react';
 
 export default function MorningFocus() {
   const { stats, leads } = useDashboard();
 
   const items = useMemo(() => {
+    const delayedFollowups = leads.filter(l =>
+      l.daysInStage >= 3 &&
+      !['Lost', 'Completed', 'Closed Won', 'Closed Lost'].some(s => l.stage.includes(s))
+    ).length;
+    const quotePending = leads.filter(l =>
+      ['Quotation Sent', 'Quote Sent', 'Proposal Sent', 'Contract Sent'].some(s => l.stage.includes(s))
+    ).length;
     const negotiationStuck = leads.filter(l => l.stage === 'Negotiation' && l.daysInStage >= 5).length;
-    const quotationPending = stats.stageCounts['Quotation Sent'] || stats.stageCounts['Quote Sent'] || 0;
-    const siteVisits = stats.stageCounts['Site Visit'] || stats.stageCounts['Consultation'] || 0;
-    const execution = stats.stageCounts['Execution'] || stats.stageCounts['Work Started'] || 0;
+    const highIntent = leads.filter(l => l.probability >= 60 && l.daysInStage >= 3).length;
+    const unassigned = stats.teamCounts['Unassigned'] || 0;
+    const hasValues = leads.some(l => l.value > 0);
 
     return [
-      { Icon: RotateCcw,      count: stats.followUpCount, label: 'leads need follow-up',          urgency: 'high' as const },
-      { Icon: FileText,       count: quotationPending,    label: 'quotes pending response',        urgency: 'high' as const },
-      { Icon: Handshake,      count: negotiationStuck,    label: 'negotiations need attention',    urgency: 'critical' as const },
-      { Icon: MapPin,         count: siteVisits,          label: 'consultations/visits active',    urgency: 'medium' as const },
-      { Icon: Wrench,         count: execution,           label: 'in execution/delivery',          urgency: 'medium' as const },
-      { Icon: AlertTriangle,  count: 0,                   label: `₹${stats.atRiskValue}L pipeline at risk`, urgency: 'critical' as const, valueOnly: true },
+      { Icon: RotateCcw,      count: delayedFollowups, label: 'leads need follow-up',         urgency: 'high' as const },
+      { Icon: FileText,       count: quotePending,     label: 'quotes / proposals pending',   urgency: 'high' as const },
+      { Icon: Handshake,      count: negotiationStuck, label: 'negotiations need attention',   urgency: 'critical' as const },
+      { Icon: Target,         count: highIntent,       label: 'high-intent leads waiting',     urgency: 'critical' as const },
+      { Icon: Users,          count: unassigned,        label: 'leads unassigned',              urgency: unassigned > 0 ? 'high' as const : 'medium' as const },
+      { Icon: AlertTriangle,  count: 0,                label: hasValues ? `₹${stats.atRiskValue}L revenue at risk` : `${stats.stuckCount} opportunities at risk`, urgency: 'critical' as const, valueOnly: true },
     ];
   }, [stats, leads]);
 
@@ -31,12 +38,12 @@ export default function MorningFocus() {
         <div className="flex items-center gap-2">
           <span className="text-lg">☀️</span>
           <div>
-            <div className="text-th-heading font-bold text-sm">Founder&apos;s Morning Focus</div>
+            <div className="text-th-heading font-bold text-sm">Priority Actions</div>
             <div className="text-th-muted text-xs">{date} — here&apos;s what needs attention today</div>
           </div>
         </div>
         <div className="ml-auto bg-amber-500/15 border border-amber-500/30 rounded-lg px-2.5 py-1">
-          <span className="text-amber-500 text-xs font-bold">{items.length} items</span>
+          <span className="text-amber-500 text-xs font-bold">{items.filter(i => !i.valueOnly && i.count > 0).length + (stats.atRiskValue > 0 || stats.stuckCount > 0 ? 1 : 0)} items</span>
         </div>
       </div>
 

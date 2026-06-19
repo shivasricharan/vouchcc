@@ -6,7 +6,7 @@ import type { TemplateId } from '@/lib/leadTypes';
 import { Database, Sun, Moon, Sparkles } from 'lucide-react';
 
 export default function SettingsView() {
-  const { dataMode, fileName, uploadedAt, loadDemoData, setShowUpload, setView, stats, templateId, setTemplateId, theme, toggleTheme, mappingConfidence } = useDashboard();
+  const { dataMode, fileName, uploadedAt, loadDemoData, setView, stats, templateId, setTemplateId, theme, toggleTheme, mappingConfidence } = useDashboard();
 
   return (
     <div className="p-5 space-y-5 max-w-2xl">
@@ -15,7 +15,6 @@ export default function SettingsView() {
         <p className="text-th-muted text-sm mt-0.5">Data source, templates, and preferences</p>
       </div>
 
-      {/* Data Source */}
       <div className="bg-th-surface border border-th-border rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <Database size={14} className="text-th-muted" />
@@ -28,27 +27,26 @@ export default function SettingsView() {
           <div className={`w-2.5 h-2.5 rounded-full ${dataMode === 'live' ? 'bg-green-400' : 'bg-amber-400 animate-pulse'}`} />
           <div>
             <div className={`font-bold text-sm ${dataMode === 'live' ? 'text-green-500' : 'text-amber-500'}`}>
-              {dataMode === 'live' ? 'LIVE DATA' : 'DEMO MODE'}
+              {dataMode === 'live' ? 'LIVE DATA' : 'SAMPLE DATA'}
             </div>
             <div className="text-th-muted text-xs mt-0.5">
               {dataMode === 'live'
                 ? `${fileName} · Uploaded ${uploadedAt?.toLocaleString('en-IN')} · ${stats.total} leads · ${mappingConfidence}% confidence`
-                : 'Sample demo data — 100 leads'}
+                : 'Exploring sample data'}
             </div>
           </div>
         </div>
 
         <div className="flex gap-3">
-          <button onClick={() => { setShowUpload(true); setView('upload'); }} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
+          <button onClick={() => setView('upload')} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
             Upload New Data
           </button>
           {dataMode === 'live' && (
-            <button onClick={loadDemoData} className="px-4 py-2.5 rounded-lg bg-th-hover border border-th-border text-th-body text-sm transition-colors">Reset to Demo</button>
+            <button onClick={loadDemoData} className="px-4 py-2.5 rounded-lg bg-th-hover border border-th-border text-th-body text-sm transition-colors">Reset to Sample</button>
           )}
         </div>
       </div>
 
-      {/* Template */}
       <div className="bg-th-surface border border-th-border rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles size={14} className="text-amber-500" />
@@ -70,7 +68,6 @@ export default function SettingsView() {
         )}
       </div>
 
-      {/* Appearance */}
       <div className="bg-th-surface border border-th-border rounded-xl p-5">
         <div className="text-th-heading font-semibold text-sm mb-4">Appearance</div>
         <button onClick={toggleTheme}
@@ -83,14 +80,13 @@ export default function SettingsView() {
         </button>
       </div>
 
-      {/* About */}
       <div className="bg-th-surface border border-th-border rounded-xl p-5">
-        <div className="text-th-heading font-semibold text-sm mb-3">About Vouch Command Center</div>
+        <div className="text-th-heading font-semibold text-sm mb-3">About Vouch Insights</div>
         <div className="space-y-2 text-th-body text-xs leading-relaxed">
-          <p>Vouch helps businesses know what happens between inquiry and conversion. Upload any CSV with lead, sales, or customer journey data — Vouch auto-detects columns and builds a clean founder dashboard.</p>
-          <p>Works for interior design, SaaS, agencies, education, real estate, healthcare, events, consulting, and any service business.</p>
+          <p>Vouch Insights helps businesses find revenue leaks, stuck leads, missed follow-ups, and conversion opportunities. Upload any CSV with lead, sales, or customer journey data — Vouch auto-detects columns and builds a clean founder dashboard.</p>
+          <p>Works for any service business with inquiries, leads, and conversions.</p>
           <p>Your data never leaves your browser — all processing happens locally.</p>
-          <p className="text-th-faint">Powered by Vouch · vouchcc.netlify.app</p>
+          <p className="text-th-faint">Powered by Vouch · yourvouch.com</p>
         </div>
       </div>
     </div>

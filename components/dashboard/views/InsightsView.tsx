@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
 import { generateTextSummary, generateHTMLSummary, buildMailtoLink } from '@/lib/generateSummary';
-import { Download, Mail, TrendingDown, Users, Target, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Download, Mail, TrendingDown, Target, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export default function InsightsView() {
   const { stats, leads, dataMode, fileName } = useDashboard();
@@ -11,6 +11,7 @@ export default function InsightsView() {
   const [showEmailBox, setShowEmailBox] = useState(false);
 
   const businessName = dataMode === 'live' && fileName ? fileName.replace(/\.[^.]+$/, '') : 'Your Business';
+  const hasValues = leads.some(l => l.value > 0);
 
   const insights = useMemo(() => {
     const topSource = Object.entries(stats.sourceCounts).sort((a, b) => b[1] - a[1]);
@@ -47,7 +48,7 @@ export default function InsightsView() {
     <div className="p-5 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-th-heading font-bold text-lg">Smart Insights</h2>
+          <h2 className="text-th-heading font-bold text-lg">Revenue Insights</h2>
           <p className="text-th-muted text-sm mt-0.5">Deep analysis of {stats.total} leads</p>
         </div>
         <div className="flex items-center gap-2">
@@ -76,8 +77,8 @@ export default function InsightsView() {
         {[
           { label: 'Pipeline Health', value: stats.stuckCount <= 5 ? 'Good' : stats.stuckCount <= 15 ? 'At Risk' : 'Critical', color: stats.stuckCount <= 5 ? 'text-green-500' : stats.stuckCount <= 15 ? 'text-amber-500' : 'text-red-500' },
           { label: 'Conversion Rate', value: `${convRate}%`, color: 'text-blue-500' },
-          { label: 'At-Risk Value', value: `₹${stats.atRiskValue}L`, color: 'text-orange-500' },
-          { label: 'Pipeline Value', value: `₹${(stats.pipelineValue / 100).toFixed(1)} Cr`, color: 'text-green-500' },
+          { label: hasValues ? 'At-Risk Value' : 'At-Risk Leads', value: hasValues ? `₹${stats.atRiskValue}L` : String(stats.stuckCount), color: 'text-orange-500' },
+          { label: hasValues ? 'Pipeline Value' : 'Active Pipeline', value: hasValues ? `₹${(stats.pipelineValue / 100).toFixed(1)} Cr` : String(stats.activeFunnelCount), color: 'text-green-500' },
         ].map(k => (
           <div key={k.label} className="bg-th-surface border border-th-border rounded-xl p-4">
             <div className="text-th-muted text-xs mb-1">{k.label}</div>
@@ -98,7 +99,7 @@ export default function InsightsView() {
                 <span className="text-th-body text-xs">{stage}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-orange-500 font-bold text-xs">{count} stuck</span>
-                  <span className="text-th-faint text-[10px]">₹{insights.stuckValueByStage[stage] || 0}L</span>
+                  {hasValues && <span className="text-th-faint text-[10px]">₹{insights.stuckValueByStage[stage] || 0}L</span>}
                 </div>
               </div>
             ))}
@@ -109,7 +110,7 @@ export default function InsightsView() {
         <div className="bg-th-surface border border-th-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Target size={14} className="text-blue-500" />
-            <span className="text-th-heading font-semibold text-sm">Source Performance</span>
+            <span className="text-th-heading font-semibold text-sm">Source Quality</span>
           </div>
           <div className="space-y-2">
             {Object.entries(stats.sourceCounts).sort((a, b) => b[1] - a[1]).map(([src, count]) => {
@@ -139,7 +140,7 @@ export default function InsightsView() {
             <div className="flex items-start gap-2 text-xs"><ArrowRight size={12} className="text-red-500 shrink-0 mt-0.5" /><span className="text-th-body">Assign {insights.unassigned} unassigned leads immediately — they go cold fast.</span></div>
           )}
           {insights.biggestBottleneck && (
-            <div className="flex items-start gap-2 text-xs"><ArrowRight size={12} className="text-orange-500 shrink-0 mt-0.5" /><span className="text-th-body">Focus on {insights.biggestBottleneck[0]} — {insights.biggestBottleneck[1]} leads stuck, ₹{insights.stuckValueByStage[insights.biggestBottleneck[0]] || 0}L at risk.</span></div>
+            <div className="flex items-start gap-2 text-xs"><ArrowRight size={12} className="text-orange-500 shrink-0 mt-0.5" /><span className="text-th-body">Focus on {insights.biggestBottleneck[0]} — {insights.biggestBottleneck[1]} leads stuck{hasValues ? `, ₹${insights.stuckValueByStage[insights.biggestBottleneck[0]] || 0}L at risk` : ''}.</span></div>
           )}
           {insights.topSource && (
             <div className="flex items-start gap-2 text-xs"><ArrowRight size={12} className="text-blue-500 shrink-0 mt-0.5" /><span className="text-th-body">{insights.topSource[0]} is your top source ({insights.topSource[1]} leads). Invest more here.</span></div>

@@ -22,7 +22,7 @@ export default function Sidebar() {
 
   const badgeLabel = dataMode === 'live'
     ? `Live: ${fileName ? (fileName.length > 18 ? fileName.slice(0, 18) + '…' : fileName) : 'uploaded'}`
-    : 'Sample Demo Data';
+    : 'Sample Data';
 
   return (
     <>
@@ -44,8 +44,7 @@ export default function Sidebar() {
           </div>
           {open && (
             <div className="min-w-0">
-              <div className="text-th-heading font-bold text-sm leading-tight truncate">Vouch</div>
-              <div className="text-th-muted text-[10px] truncate">Command Center</div>
+              <div className="text-th-heading font-bold text-sm leading-tight truncate">Vouch Insights</div>
             </div>
           )}
         </div>
@@ -81,7 +80,7 @@ export default function Sidebar() {
                 : 'bg-amber-500/10 border-amber-500/20'
             }`}>
               <div className={`text-[10px] font-bold uppercase tracking-wide ${dataMode === 'live' ? 'text-green-500' : 'text-amber-500'}`}>
-                {dataMode === 'live' ? 'Live Data' : 'Demo Mode'}
+                {dataMode === 'live' ? 'Live Data' : 'Sample Data'}
               </div>
               <div className="text-th-muted text-[10px] mt-0.5 truncate">{badgeLabel}</div>
             </div>

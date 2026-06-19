@@ -93,11 +93,12 @@ export interface ComputedStats {
   followUpCount: number;
   atRiskValue: number;
   mappingConfidence: number;
+  hasValues: boolean;
 }
 
 // ─── Templates ────────────────────────────────────────────
 
-export type TemplateId = 'auto' | 'service' | 'interior' | 'saas' | 'agency' | 'education' | 'realestate' | 'healthcare' | 'events';
+export type TemplateId = 'auto' | 'service' | 'interior' | 'saas' | 'agency' | 'education' | 'realestate' | 'healthcare' | 'events' | 'retail' | 'viralreels';
 
 export interface JourneyTemplate {
   id: TemplateId;
@@ -171,6 +172,20 @@ export const TEMPLATES: Record<TemplateId, JourneyTemplate> = {
     wonStages: ['Advance Received', 'Planning', 'Execution', 'Completed'],
     lostStages: ['Lost'],
     activeStages: ['Enquiry', 'Consultation', 'Proposal Sent', 'Quotation Sent', 'Negotiation'],
+  },
+  retail: {
+    id: 'retail', name: 'Retail / Local Business',
+    stages: ['New Inquiry', 'First Contact', 'Quote Sent', 'Follow-up', 'Negotiation', 'Completed', 'Lost'],
+    wonStages: ['Completed'],
+    lostStages: ['Lost'],
+    activeStages: ['New Inquiry', 'First Contact', 'Quote Sent', 'Follow-up', 'Negotiation'],
+  },
+  viralreels: {
+    id: 'viralreels', name: 'ViralReels Sample',
+    stages: ['New Inquiry', 'First Contact', 'Qualified', 'Demo Booked', 'Demo Completed', 'Proposal Sent', 'Negotiation', 'Closed Won', 'Active Customer', 'Closed Lost'],
+    wonStages: ['Closed Won', 'Active Customer'],
+    lostStages: ['Closed Lost'],
+    activeStages: ['New Inquiry', 'First Contact', 'Qualified', 'Demo Booked', 'Demo Completed', 'Proposal Sent', 'Negotiation'],
   },
 };
 

@@ -6,7 +6,7 @@ export function generateTextSummary(stats: ComputedStats, leads: UniversalLead[]
   const topOwner = Object.entries(stats.teamCounts).filter(([k]) => k !== 'Unassigned').sort((a, b) => b[1] - a[1])[0];
 
   const lines = [
-    `VOUCH COMMAND CENTER — PIPELINE SUMMARY`,
+    `VOUCH INSIGHTS — PIPELINE SUMMARY`,
     `${businessName} · Generated ${date}`,
     `${'='.repeat(50)}`,
     ``,
@@ -35,7 +35,7 @@ export function generateTextSummary(stats: ComputedStats, leads: UniversalLead[]
     stats.stuckCount > 0 ? `  • ${stats.stuckCount} leads stuck ≥7 days — immediate action needed` : '',
     stats.atRiskValue > 0 ? `  • ₹${stats.atRiskValue}L pipeline at risk from stuck high-value leads` : '',
     ``,
-    `Powered by Vouch Command Center · vouchcc.netlify.app`,
+    `Powered by Vouch Insights · yourvouch.com`,
   ];
   return lines.filter(l => l !== undefined).join('\n');
 }
@@ -59,7 +59,7 @@ ${stats.byStage.map(s => `<tr><td>${s.stage}</td><td>${s.count}</td><td>₹${s.v
 ${stats.topStuckLeads.slice(0, 8).map(l => `<tr><td>${l.id}</td><td>${l.client}</td><td>${l.stage}</td><td><span class="tag ${l.daysInStage >= 9 ? 'urgent' : ''}">${l.daysInStage}d</span></td><td>₹${l.value}L</td><td style="font-size:11px;color:#64748b">${l.nextAction}</td></tr>`).join('')}</table>
 <h2>Team</h2><table><tr><th>Member</th><th>Leads</th></tr>
 ${Object.entries(stats.teamCounts).sort((a, b) => b[1] - a[1]).map(([n, c]) => `<tr><td>${n}</td><td>${c}</td></tr>`).join('')}</table>
-<div class="footer">Vouch Command Center · vouchcc.netlify.app</div></body></html>`;
+<div class="footer">Vouch Insights · yourvouch.com</div></body></html>`;
 }
 
 export function buildMailtoLink(toEmail: string, stats: ComputedStats, businessName = 'Your Business'): string {
