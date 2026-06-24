@@ -5,7 +5,7 @@ import { useDashboard } from '@/context/DashboardContext';
 import { detectColumns, mapRowsToLeads, getMappingConfidence, FIELD_DEFS } from '@/lib/fieldMapping';
 import type { ColumnMap } from '@/lib/fieldMapping';
 import type { UniversalLead, TemplateId } from '@/lib/leadTypes';
-import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, Database, AlertTriangle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, Database, AlertTriangle, FileQuestion } from 'lucide-react';
 
 type ParsedRow = Record<string, string>;
 type Step = 'landing' | 'mapping' | 'preview';
@@ -31,7 +31,7 @@ const TEMPLATE_CARDS: TemplateCard[] = [
 ];
 
 export default function UploadCSVView() {
-  const { loadLiveData, loadSampleData, missingFieldsWarning } = useDashboard();
+  const { loadLiveData, loadSampleData, missingFieldsWarning, setView } = useDashboard();
   const [step, setStep] = useState<Step>('landing');
   const [rawRows, setRawRows] = useState<ParsedRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -70,9 +70,9 @@ export default function UploadCSVView() {
         const arr = XLSX.utils.sheet_to_json<ParsedRow>(ws, { defval: '' });
         if (arr.length > 0) { hdrs = Object.keys(arr[0]); rows = arr; }
       } else {
-        throw new Error('Only CSV and Excel files are supported.');
+        throw new Error('We could not read this file. Please upload a valid CSV file exported from Excel, Google Sheets, or your CRM.');
       }
-      if (rows.length === 0) throw new Error('File appears empty.');
+      if (rows.length === 0) throw new Error('File appears empty. Please check the file and try again.');
 
       const detected = detectColumns(hdrs);
       setHeaders(hdrs);
@@ -190,6 +190,14 @@ export default function UploadCSVView() {
                 {error && <div className="text-red-500 text-xs mt-3">{error}</div>}
                 <input id="csv-input" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
               </div>
+
+              {/* Inline helper */}
+              <div className="mt-3 flex items-center justify-center gap-2 text-th-muted text-[11px]">
+                <span>Not sure what to upload? Use any lead sheet, enquiry sheet, CRM export, or Google Sheet CSV.</span>
+                <button onClick={() => setView('upload-guide')} className="text-blue-500 hover:text-blue-400 font-medium whitespace-nowrap transition-colors">
+                  View Upload Guide
+                </button>
+              </div>
             </div>
           </div>
 
@@ -255,6 +263,21 @@ export default function UploadCSVView() {
               </div>
             ))}
           </div>
+
+          {/* Auto-mapping reminder */}
+          <div className="bg-blue-500/8 border border-blue-500/15 rounded-lg px-3 py-2 text-th-body text-[11px] leading-relaxed">
+            Vouch automatically maps common column names like Name, Phone, Source, Status, Stage, Date, Follow-up, Value, and Notes.
+          </div>
+
+          {/* Limited columns warning */}
+          {mappedCount <= 2 && headers.length > 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 flex items-start gap-2">
+              <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+              <span className="text-amber-500 text-[11px] leading-relaxed">
+                This file has limited data. Vouch can still analyse it, but adding source, status, stage, follow-up date, and value will improve insights.
+              </span>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button onClick={() => setStep('landing')} className="px-4 py-2 rounded-lg bg-th-hover text-th-body text-sm">Back</button>

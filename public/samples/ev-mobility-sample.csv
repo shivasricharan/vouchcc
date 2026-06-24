@@ -1,0 +1,13 @@
+Customer Name,Phone,Email,Enquiry Date,Requirement,Vehicle Type,Source,Status,Stage,Assigned To,Last Follow-up Date,Next Follow-up Date,Estimated Value,Notes
+Ramesh Yadav,+91 98765 50001,ramesh.y@example.com,2025-06-01,Test Ride,2W Electric Scooter,Website,Active,Test Ride Scheduled,Vikram,2025-06-03,2025-06-05,85000,Ola S1 Pro interested
+Pooja Thakur,+91 87654 50002,pooja.t@example.com,2025-06-02,Corporate Fleet Enquiry,4W Electric SUV,LinkedIn,Active,Proposal Sent,Meena,2025-06-04,2025-06-08,4500000,15 vehicles for Pune fleet
+Sanjay Mishra,+91 76543 50003,sanjay.m@example.com,2025-06-03,Battery Replacement,2W Electric Scooter,Phone Call,Active,Service Booked,Vikram,2025-06-03,2025-06-06,12000,Warranty claim check needed
+Nisha Reddy,+91 65432 50004,nisha.r@example.com,2025-05-28,Monthly Rental,4W Electric Sedan,Instagram,Pending,Follow-up Due,Arjun,2025-05-30,2025-06-02,18000,Wants 6-month rental plan
+Kiran Desai,+91 54321 50005,kiran.d@example.com,2025-06-04,Purchase Enquiry,3W Electric Auto,Referral,Active,Quotation Sent,Meena,2025-06-06,2025-06-10,350000,Auto rickshaw for last mile delivery
+Manish Jha,+91 43210 50006,manish.j@example.com,2025-05-25,Service Request,2W Electric Scooter,Walk-in,Completed,Closed Won,Vikram,2025-06-01,,8500,Annual service completed and paid
+Divya Saxena,+91 32109 50007,divya.s@example.com,2025-06-05,Test Ride,4W Electric SUV,Google Ads,Active,Test Ride Scheduled,Arjun,2025-06-05,2025-06-08,1800000,Tata Nexon EV interested
+Rohan Patil,+91 21098 50008,rohan.p@example.com,2025-05-20,Dealer Enquiry,2W Electric Scooter,Website,Cold,Cold Lead,Meena,2025-05-22,,0,Asked for franchise info no follow-up
+Aarti Kapoor,+91 10987 50009,aarti.k@example.com,2025-06-06,Purchase Enquiry,4W Electric Sedan,Referral,Active,Quote Sent,Vikram,2025-06-07,2025-06-12,1500000,Referred by Sanjay wants MG Comet
+Tarun Bose,+91 99887 50010,tarun.b@example.com,2025-06-01,Corporate Fleet Enquiry,4W Electric SUV,LinkedIn,Active,Closed Won,Meena,2025-06-04,,8200000,10 BYD Atto 3 order confirmed
+Pallavi Nair,+91 88776 50011,pallavi.n@example.com,2025-06-07,Monthly Rental,2W Electric Scooter,Instagram,New,New Enquiry,,2025-06-09,5000,Student wants monthly rental plan
+Ajay Sharma,+91 77665 50012,ajay.s@example.com,2025-05-15,Battery Replacement,4W Electric Sedan,Phone Call,Pending,Follow-up Due,Arjun,2025-05-20,2025-05-28,45000,Needs battery health check first

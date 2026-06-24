@@ -1,0 +1,13 @@
+Name,Phone,Email,Source,Date,Status,Stage,Last Follow-up Date,Next Follow-up Date,Assigned To,Deal Value,Notes
+Priya Sharma,+91 98765 43210,priya@example.com,Website,2025-06-01,Active,New Inquiry,2025-06-03,2025-06-06,Rahul,150000,Interested in premium plan
+Arjun Mehta,+91 87654 32109,arjun.m@example.com,Referral,2025-06-02,Active,Quotation Sent,2025-06-05,2025-06-08,Sneha,280000,Sent revised quote
+Kavita Reddy,+91 76543 21098,kavita.r@example.com,Instagram,2025-06-03,Active,First Contact,2025-06-04,2025-06-07,Rahul,0,Responded to DM
+Deepak Verma,+91 65432 10987,deepak.v@example.com,WhatsApp,2025-05-28,Pending,Follow-up Due,2025-05-30,2025-06-03,Anil,95000,No response to last message
+Sunita Patel,+91 54321 09876,sunita.p@example.com,Google Ads,2025-06-04,Active,Site Visit Scheduled,2025-06-06,2025-06-10,Sneha,320000,Confirmed visit for Monday
+Manoj Kumar,+91 43210 98765,manoj.k@example.com,Walk-in,2025-05-25,Cold,Lost,2025-05-27,,Rahul,0,Budget constraints
+Ritu Jain,+91 32109 87654,ritu.j@example.com,Referral,2025-06-05,Active,Proposal Sent,2025-06-07,2025-06-12,Anil,450000,Waiting for approval
+Vikram Singh,+91 21098 76543,vikram.s@example.com,Website,2025-06-06,New,New Inquiry,,2025-06-08,Sneha,0,Just submitted form
+Neha Gupta,+91 10987 65432,neha.g@example.com,Instagram,2025-05-20,Cold,No Response,2025-05-22,,Rahul,0,3 follow-ups done no reply
+Amit Chauhan,+91 99887 76655,amit.c@example.com,Phone Call,2025-06-01,Active,Closed Won,2025-06-04,,Anil,200000,Payment received
+Lakshmi Nair,+91 88776 65544,lakshmi.n@example.com,WhatsApp,2025-06-07,Active,First Contact,2025-06-07,2025-06-10,Sneha,120000,Asked for brochure
+Rajesh Iyer,+91 77665 54433,rajesh.i@example.com,Google Ads,2025-05-15,Pending,Follow-up Due,2025-05-20,2025-06-01,Anil,175000,Needs budget approval

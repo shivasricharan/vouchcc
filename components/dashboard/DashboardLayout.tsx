@@ -9,6 +9,7 @@ import AIInsights from './AIInsights';
 import PriorityFollowups from './PriorityFollowups';
 import Recommendations from './Recommendations';
 import GuideView from './views/GuideView';
+import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
 
 function AuditCTA() {
@@ -62,6 +63,7 @@ function DashboardContent() {
         )}
         {view === 'upload' && <UploadCSVView />}
         {view === 'guide'  && <GuideView />}
+        {view === 'upload-guide' && <UploadGuideView />}
       </main>
       {showUpload && view !== 'upload' && <UploadModal />}
     </div>

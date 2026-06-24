@@ -1,13 +1,13 @@
 'use client';
 
 import { useDashboard } from '@/context/DashboardContext';
-import { Upload, Sun, Moon, ExternalLink, ArrowLeftRight, ArrowLeft, BookOpen } from 'lucide-react';
+import { Upload, Sun, Moon, ExternalLink, ArrowLeftRight, ArrowLeft, BookOpen, FileQuestion } from 'lucide-react';
 
 export default function DashHeader() {
   const { view, setView, dataMode, fileName, uploadedAt, theme, toggleTheme } = useDashboard();
 
   const uploadTimeStr = uploadedAt?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  const showBackToTemplates = view === 'dashboard' || view === 'guide';
+  const showBackToTemplates = view === 'dashboard' || view === 'guide' || view === 'upload-guide';
 
   return (
     <header className="h-14 bg-th-elevated border-b border-th-border flex items-center px-5 gap-3 shrink-0">
@@ -54,6 +54,14 @@ export default function DashHeader() {
         >
           <Upload size={13} />
           <span className="hidden sm:inline">Upload CSV</span>
+        </button>
+
+        <button
+          onClick={() => setView('upload-guide')}
+          className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
+        >
+          <FileQuestion size={13} />
+          <span>Upload Guide</span>
         </button>
 
         {showBackToTemplates && (

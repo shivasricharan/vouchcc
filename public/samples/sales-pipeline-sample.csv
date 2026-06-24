@@ -1,0 +1,13 @@
+Lead Name,Company,Phone,Email,Lead Source,Pipeline Stage,Deal Status,Quote Amount,Owner,Created Date,Last Contacted,Next Follow-up,Remarks
+Ananya Rao,TechBridge Solutions,+91 98765 11111,ananya@techbridge.in,LinkedIn,Discovery Call,Active,500000,Kiran,2025-06-01,2025-06-04,2025-06-08,Needs enterprise demo
+Farhan Sheikh,CloudNest,+91 87654 22222,farhan@cloudnest.io,Website,Demo Scheduled,Active,320000,Pooja,2025-06-02,2025-06-05,2025-06-07,Confirmed demo Thursday
+Meera Deshmukh,PixelForge,+91 76543 33333,meera@pixelforge.co,Referral,Proposal Sent,Negotiation,780000,Kiran,2025-05-28,2025-06-03,2025-06-10,Reviewing pricing tier
+Sameer Joshi,DataPulse,+91 65432 44444,sameer@datapulse.in,Google Ads,Qualified,Active,0,Pooja,2025-06-03,2025-06-04,2025-06-06,Initial call done
+Tanya Malhotra,GreenLeaf Retail,+91 54321 55555,tanya@greenleaf.in,Cold Email,First Contact,New,150000,Arjun,2025-06-05,2025-06-05,2025-06-09,Opened email replied
+Rohan Kapoor,SwiftLogistics,+91 43210 66666,rohan@swiftlog.co,LinkedIn,Contract Sent,Active,1200000,Kiran,2025-05-20,2025-06-02,2025-06-06,Legal review pending
+Divya Menon,HealthStack,+91 32109 77777,divya@healthstack.in,Partner,Discovery Call,Active,400000,Pooja,2025-06-04,2025-06-06,2025-06-11,Needs compliance info
+Nikhil Bhat,EduPrime,+91 21098 88888,nikhil@eduprime.com,Website,Lost,Closed Lost,250000,Arjun,2025-05-15,2025-05-25,,Went with competitor
+Shalini Verma,CraftHouse,+91 10987 99999,shalini@crafthouse.in,Referral,Closed Won,Won,650000,Kiran,2025-05-10,2025-06-01,,Onboarding started
+Aditya Nanda,FinServe Pro,+91 99001 12345,aditya@finserve.in,Google Ads,Qualified,Active,0,Pooja,2025-06-06,2025-06-06,2025-06-09,Wants pricing comparison
+Preeti Saxena,MediaVault,+91 88112 23456,preeti@mediavault.in,Cold Email,Follow-up Due,Pending,300000,Arjun,2025-05-22,2025-05-28,2025-06-02,No response after demo
+Karthik Rajan,AutoMate,+91 77223 34567,karthik@automate.co,Partner,Proposal Sent,Active,900000,Kiran,2025-05-30,2025-06-04,2025-06-09,Revised scope requested
