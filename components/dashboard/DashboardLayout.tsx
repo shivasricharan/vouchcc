@@ -17,7 +17,7 @@ function AuditCTA() {
     <div className="bg-th-surface border border-blue-500/15 rounded-xl p-6 text-center">
       <div className="text-th-heading font-bold text-sm mb-1">Ready to discover opportunities in your business?</div>
       <p className="text-th-muted text-xs mb-3 max-w-md mx-auto">
-        Start with a free Opportunity Audit. Share a CSV, Google Sheet, or business data and Vouch will show where opportunities are hiding.
+        Start with a free Opportunity Audit. Share a CSV, Google Sheet, or business data and Vouch will show where opportunities need attention.
       </p>
       <div className="flex items-center justify-center gap-3 flex-wrap">
         <a
@@ -58,7 +58,7 @@ function DashboardContent() {
             <AuditCTA />
             <div className="text-center py-3 space-y-1">
               <div className="text-th-faint text-[10px] space-y-0.5">
-                <div>Your data stays on your device during this demo.</div>
+                <div>Your data stays on your device during this analyzer session.</div>
                 <div>Upload only sample or non-sensitive data.</div>
               </div>
               <span className="text-th-faint text-xs">Powered by Vouch</span>

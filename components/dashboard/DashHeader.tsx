@@ -12,7 +12,7 @@ export default function DashHeader() {
   return (
     <header className="h-14 bg-th-elevated border-b border-th-border flex items-center px-5 gap-3 shrink-0">
       <div className="flex items-center gap-3 min-w-0">
-        <h1 className="text-th-heading font-bold text-sm whitespace-nowrap">Vouch Insights</h1>
+        <h1 className="text-th-heading font-bold text-sm whitespace-nowrap">Vouch Opportunity Analyzer</h1>
         {dataMode === 'demo' ? (
           <span className="hidden sm:inline text-amber-500 text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
             SAMPLE DATA

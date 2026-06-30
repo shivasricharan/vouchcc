@@ -291,7 +291,7 @@ export default function ViralReelsPage() {
         <section className="bg-th-surface border border-blue-500/15 rounded-xl p-6 text-center">
           <div className="text-th-heading font-bold text-sm mb-1">Want this for your real data?</div>
           <p className="text-th-muted text-xs mb-4 max-w-md mx-auto">
-            Start with a 14-Day Revenue Leak Audit. Share your data and Vouch will show where users are leaking.
+            Start with a 14-Day Opportunity Audit. Share your data and Vouch will show where opportunities need attention.
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <a
