@@ -52,14 +52,21 @@ function DashboardContent() {
           <div className="p-6 max-w-6xl mx-auto space-y-8">
             <KPICards />
             <AIInsights />
+            <Recommendations />
+
+            <div className="flex items-center gap-3 pt-2">
+              <div className="h-px flex-1 bg-th-border" />
+              <span className="text-th-faint text-[10px] font-semibold uppercase tracking-widest">Detailed Breakdown</span>
+              <div className="h-px flex-1 bg-th-border" />
+            </div>
+
             <PriorityFollowups />
             <FunnelChart />
-            <Recommendations />
             <AuditCTA />
             <div className="text-center py-3 space-y-1">
               <div className="text-th-faint text-[10px] space-y-0.5">
-                <div>Your data stays on your device during this analyzer session.</div>
-                <div>Upload only sample or non-sensitive data.</div>
+                <div>Your uploaded data stays private during this session.</div>
+                <div>For best results, upload sample or non-sensitive business data.</div>
               </div>
               <span className="text-th-faint text-xs">Powered by Vouch</span>
             </div>

@@ -12,7 +12,14 @@ type Step = 'landing' | 'processing' | 'mapping' | 'preview';
 
 const WORKS_WITH = ['CRM exports', 'Website enquiries', 'Google Sheets', 'Excel', 'ERP exports', 'Lead sheets', 'Sales reports', 'Any structured CSV'];
 
-const PROCESSING_ITEMS = ['CSV Uploaded', 'Columns Understood', 'Records Processed', 'Building Opportunity Insights…'];
+const PROCESSING_ITEMS = [
+  'CSV Uploaded',
+  'Understanding Your Data',
+  'Mapping Business Fields',
+  'Building Opportunity Score',
+  'Generating Vouch Insights',
+  'Preparing Suggested Actions',
+];
 
 const MAPPING_EXAMPLES = [
   { from: 'Lead Status', to: 'Opportunity Stage' },
@@ -133,8 +140,11 @@ export default function UploadCSVView() {
             <h1 className="text-th-heading font-bold text-3xl sm:text-4xl mb-4 leading-tight max-w-2xl mx-auto">
               Discover missed revenue opportunities in your existing business data.
             </h1>
-            <p className="text-th-body text-sm sm:text-base max-w-xl mx-auto leading-relaxed mb-7">
+            <p className="text-th-body text-sm sm:text-base max-w-xl mx-auto leading-relaxed mb-4">
               Upload a CSV from your CRM, ERP, website, Google Sheets, Excel or lead management system. Vouch automatically understands your data and highlights opportunities that deserve attention.
+            </p>
+            <p className="text-th-muted text-xs max-w-md mx-auto leading-relaxed mb-7">
+              Don&apos;t worry if your CSV looks different. Vouch automatically understands common business fields and standardizes your data.
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <button
@@ -184,7 +194,7 @@ export default function UploadCSVView() {
             <div className="mt-3 flex items-center justify-center gap-2 text-th-muted text-[11px] flex-wrap text-center">
               <span>Not sure what to upload? Use any lead sheet, enquiry sheet, CRM export, or Google Sheet CSV.</span>
               <button onClick={() => setView('upload-guide')} className="text-blue-500 hover:text-blue-400 font-medium whitespace-nowrap transition-colors">
-                View Upload Guide
+                Before You Upload
               </button>
             </div>
           </div>
@@ -221,8 +231,8 @@ export default function UploadCSVView() {
 
           {/* Footer disclaimer */}
           <div className="text-center text-th-faint text-[10px] space-y-0.5">
-            <div>Your data stays on your device during this analyzer session.</div>
-            <div>Upload only sample or non-sensitive data.</div>
+            <div>Your uploaded data stays private during this session.</div>
+            <div>For best results, upload sample or non-sensitive business data.</div>
           </div>
         </>
       )}
@@ -233,7 +243,7 @@ export default function UploadCSVView() {
           {PROCESSING_ITEMS.map((item, i) => (
             <div
               key={item}
-              className={`flex items-center gap-3 justify-center transition-opacity duration-500 ${i <= processingStep ? 'opacity-100' : 'opacity-0'}`}
+              className={`flex items-center gap-3 justify-center transition-all duration-500 ease-out ${i <= processingStep ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1.5'}`}
             >
               <CheckCircle2 size={16} className="text-green-500 shrink-0" />
               <span className="text-th-heading text-sm font-medium">{item}</span>
@@ -274,6 +284,16 @@ export default function UploadCSVView() {
 
           <div className="text-th-body text-xs"><strong>{rawRows.length} rows</strong> from <strong>{fileName}</strong></div>
 
+          {/* Low-confidence empty state */}
+          {(confidence < 50 || (mappedCount <= 2 && headers.length > 0)) && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 flex items-start gap-2">
+              <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+              <span className="text-amber-500 text-[11px] leading-relaxed">
+                We couldn&apos;t confidently understand some columns. Please review the suggested mappings below.
+              </span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {FIELD_DEFS.map(({ key, label, required }) => (
               <div key={key}>
@@ -296,16 +316,6 @@ export default function UploadCSVView() {
           <div className="bg-blue-500/8 border border-blue-500/15 rounded-lg px-3 py-2 text-th-body text-[11px] leading-relaxed">
             Vouch automatically maps common column names like Name, Phone, Source, Status, Stage, Date, Follow-up, Value, and Notes.
           </div>
-
-          {/* Limited columns warning */}
-          {mappedCount <= 2 && headers.length > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 flex items-start gap-2">
-              <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
-              <span className="text-amber-500 text-[11px] leading-relaxed">
-                This file has limited data. Vouch can still analyse it, but adding source, status, stage, follow-up date, and value will improve insights.
-              </span>
-            </div>
-          )}
 
           <div className="flex gap-3 pt-2">
             <button onClick={() => setStep('landing')} className="px-4 py-2 rounded-lg bg-th-hover text-th-body text-sm">Back</button>

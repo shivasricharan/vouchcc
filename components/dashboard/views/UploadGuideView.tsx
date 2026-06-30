@@ -1,45 +1,37 @@
 'use client';
 
 import { useDashboard } from '@/context/DashboardContext';
-import { Download, Info, ArrowLeft } from 'lucide-react';
+import {
+  ArrowLeft, Download,
+  Upload, CheckCircle2, Wand2, Gauge, Lightbulb, ListChecks,
+  Database, Sheet, FileSpreadsheet, Server, Globe, BarChart3, Users, FileText,
+} from 'lucide-react';
 
-const UPLOAD_TYPES = [
-  'CRM export', 'Google Sheet export', 'Excel saved as CSV', 'Lead tracker',
-  'Customer enquiry sheet', 'Sales pipeline sheet', 'Quotation tracker',
-  'Follow-up register', 'Booking data', 'Service request data',
+const CARDS = [
+  { icon: Upload, title: 'Choose a CSV', body: 'Upload any structured CSV from your CRM, Excel, ERP, Google Sheets or website enquiries.' },
+  { icon: CheckCircle2, title: 'No Perfect Format Needed', body: "Don't worry if your column names are different. Vouch automatically understands common business fields." },
+  { icon: Wand2, title: 'AI Mapping', body: 'Vouch maps your columns into a standard business structure.' },
+  { icon: Gauge, title: 'Opportunity Score', body: 'Your business receives an Opportunity Score based on the uploaded data.' },
+  { icon: Lightbulb, title: 'Vouch Insights', body: 'Discover missed revenue opportunities, follow-up gaps and customer journey signals.' },
+  { icon: ListChecks, title: 'Suggested Actions', body: 'Receive practical recommendations on what deserves attention first.' },
 ];
 
-const MIN_FIELDS = ['Name', 'Phone or Email', 'Date', 'Status'];
-
-const BETTER_FIELDS = [
-  'Lead Source', 'Stage', 'Assigned To', 'Last Follow-up Date',
-  'Next Follow-up Date', 'Deal Value / Quote Value', 'Notes / Remarks',
-];
-
-const EXAMPLES: { type: string; csv: string }[] = [
-  { type: 'EV / Mobility', csv: 'Vehicle enquiries, bookings, corporate leads' },
-  { type: 'SaaS', csv: 'Demo requests, trial users, sales pipeline' },
-  { type: 'Agency', csv: 'Proposal tracker, inbound leads, follow-ups' },
-  { type: 'Clinic', csv: 'Appointment enquiries, patient requests' },
-  { type: 'Real Estate', csv: 'Buyer leads, site visits, property enquiries' },
-  { type: 'Interiors', csv: 'Site visits, quotation tracker, project leads' },
-  { type: 'Education', csv: 'Student enquiries, counselling follow-ups' },
-  { type: 'Events', csv: 'Registrations, sponsors, attendee enquiries' },
-  { type: 'Retail', csv: 'Customer enquiries, bulk orders, service requests' },
-];
-
-const SAMPLE_FILES = [
-  { label: 'Generic Sample CSV', file: '/samples/generic-sample.csv' },
-  { label: 'Sales Pipeline Sample CSV', file: '/samples/sales-pipeline-sample.csv' },
-  { label: 'Customer Enquiry Sample CSV', file: '/samples/customer-enquiry-sample.csv' },
-  { label: 'EV / Mobility Sample CSV', file: '/samples/ev-mobility-sample.csv' },
+const WORKS_WITH = [
+  { icon: Database, label: 'CRM Exports' },
+  { icon: Sheet, label: 'Google Sheets' },
+  { icon: FileSpreadsheet, label: 'Excel' },
+  { icon: Server, label: 'ERP Exports' },
+  { icon: Globe, label: 'Website Enquiries' },
+  { icon: BarChart3, label: 'Sales Reports' },
+  { icon: Users, label: 'Lead Management Tools' },
+  { icon: FileText, label: 'Any Structured CSV' },
 ];
 
 export default function UploadGuideView() {
   const { setView } = useDashboard();
 
   return (
-    <div className="p-6 pb-12 max-w-3xl mx-auto">
+    <div className="p-6 pb-12 max-w-4xl mx-auto">
       {/* Back + Title */}
       <button
         onClick={() => setView('upload')}
@@ -48,116 +40,51 @@ export default function UploadGuideView() {
         <ArrowLeft size={12} /> Back to Upload
       </button>
 
-      <h1 className="text-th-heading font-bold text-2xl mb-2">What can I upload?</h1>
+      <h1 className="text-th-heading font-bold text-2xl mb-2">Before You Upload</h1>
       <p className="text-th-body text-sm max-w-xl leading-relaxed mb-8">
-        Upload any CSV exported from your business data. Vouch will try to understand your columns and turn them into insights.
+        Here&apos;s what happens when you upload your business data — from raw CSV to clear opportunity insights.
       </p>
 
-      {/* Section 1: You can upload */}
-      <section className="mb-8">
-        <h2 className="text-th-heading font-semibold text-sm mb-3">You can upload</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {UPLOAD_TYPES.map(t => (
-            <div key={t} className="bg-th-surface border border-th-border rounded-lg px-3 py-2.5 text-th-body text-xs">
-              {t}
+      {/* Six cards */}
+      <section className="mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {CARDS.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="bg-th-surface border border-th-border rounded-xl p-5 hover:border-blue-500/20 transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
+                <Icon size={16} className="text-blue-500" />
+              </div>
+              <div className="text-th-heading font-semibold text-sm mb-1">{title}</div>
+              <div className="text-th-body text-xs leading-relaxed">{body}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Section 2: Minimum columns */}
-      <section className="mb-8">
-        <h2 className="text-th-heading font-semibold text-sm mb-1">Minimum columns</h2>
-        <p className="text-th-muted text-xs mb-3">Vouch can start with just a few basic fields.</p>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {MIN_FIELDS.map(f => (
-            <span key={f} className="bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-medium px-3 py-1.5 rounded-lg">
-              {f}
-            </span>
-          ))}
-        </div>
-        <div className="bg-th-surface border border-th-border rounded-lg px-4 py-3 flex items-start gap-2.5">
-          <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
-          <span className="text-th-body text-xs leading-relaxed">
-            Even if your column names are different, Vouch will try to map them automatically.
-          </span>
-        </div>
-      </section>
-
-      {/* Section 3: Better insights */}
-      <section className="mb-8">
-        <h2 className="text-th-heading font-semibold text-sm mb-1">Better insights if your file includes</h2>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {BETTER_FIELDS.map(f => (
-            <span key={f} className="bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-medium px-3 py-1.5 rounded-lg">
-              {f}
-            </span>
+      {/* Works With */}
+      <section className="mb-10">
+        <h2 className="text-th-heading font-semibold text-sm mb-3">Works With</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {WORKS_WITH.map(({ icon: Icon, label }) => (
+            <div key={label} className="bg-th-surface border border-th-border rounded-lg px-3 py-3.5 flex flex-col items-center text-center gap-2 hover:border-blue-500/20 transition-colors">
+              <Icon size={16} className="text-blue-500 shrink-0" />
+              <span className="text-th-body text-xs font-medium">{label}</span>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Section 4: Common business examples */}
-      <section className="mb-8">
-        <h2 className="text-th-heading font-semibold text-sm mb-3">Common business examples</h2>
-        <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-th-border bg-th-hover">
-                <th className="px-4 py-2.5 text-left text-th-muted font-semibold uppercase tracking-wide">Business Type</th>
-                <th className="px-4 py-2.5 text-left text-th-muted font-semibold uppercase tracking-wide">Example CSV</th>
-              </tr>
-            </thead>
-            <tbody>
-              {EXAMPLES.map((ex, i) => (
-                <tr key={ex.type} className={`border-b border-th-border last:border-0 ${i % 2 === 1 ? 'bg-th-hover/50' : ''}`}>
-                  <td className="px-4 py-2.5 text-th-heading font-medium whitespace-nowrap">{ex.type}</td>
-                  <td className="px-4 py-2.5 text-th-body">{ex.csv}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Section 5: Don't worry about perfect format */}
-      <section className="mb-8">
-        <h2 className="text-th-heading font-semibold text-sm mb-2">Your file does not need to be perfect.</h2>
-        <p className="text-th-body text-xs leading-relaxed mb-3">
-          Vouch can work with messy business data. If some fields are missing, it will still show available insights and tell you what could improve the analysis.
-        </p>
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 flex items-start gap-2.5">
-          <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
-          <span className="text-th-body text-xs leading-relaxed">
-            If lead value is missing, Vouch shows missed opportunity counts instead of revenue values.
-          </span>
-        </div>
-      </section>
-
-      {/* Section 6: Download sample CSVs */}
-      <section className="mb-8">
-        <h2 className="text-th-heading font-semibold text-sm mb-3">Download sample CSV</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {SAMPLE_FILES.map(s => (
-            <a
-              key={s.file}
-              href={s.file}
-              download
-              className="bg-th-surface border border-th-border rounded-lg px-4 py-3 flex items-center gap-2.5 hover:border-blue-500/30 transition-colors"
-            >
-              <Download size={14} className="text-blue-500 shrink-0" />
-              <span className="text-th-body text-xs font-medium">{s.label}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      {/* Section 8: Auto-mapping reminder */}
-      <section className="mb-8">
-        <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl px-4 py-3">
-          <span className="text-th-body text-xs leading-relaxed">
-            Vouch automatically maps common column names like Name, Phone, Source, Status, Stage, Date, Follow-up, Value, and Notes.
-          </span>
-        </div>
+      {/* Download sample dataset */}
+      <section className="mb-10">
+        <h2 className="text-th-heading font-semibold text-sm mb-1">Download Sample CSV</h2>
+        <p className="text-th-muted text-xs mb-3">Perfect if you want to explore Vouch before uploading your own business data.</p>
+        <a
+          href="/samples/generic-sample.csv"
+          download
+          className="inline-flex items-center gap-2.5 bg-th-surface border border-th-border rounded-lg px-4 py-3 hover:border-blue-500/30 transition-colors"
+        >
+          <Download size={14} className="text-blue-500 shrink-0" />
+          <span className="text-th-body text-xs font-medium">Download Sample Dataset</span>
+        </a>
       </section>
 
       {/* Footer nav */}

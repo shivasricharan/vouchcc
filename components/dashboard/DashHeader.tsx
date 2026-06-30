@@ -51,7 +51,7 @@ export default function DashHeader() {
           className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
         >
           <FileQuestion size={13} />
-          <span>Upload Guide</span>
+          <span>Before You Upload</span>
         </button>
 
         <button
