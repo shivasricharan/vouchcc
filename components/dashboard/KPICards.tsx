@@ -9,19 +9,25 @@ export default function KPICards() {
   const derived = useMemo(() => {
     const highIntent = leads.filter(l => l.probability >= 60).length;
     const hasValues = leads.some(l => l.value > 0);
-    return { highIntent, hasValues };
-  }, [leads]);
+    const score = stats.total > 0
+      ? Math.max(0, Math.min(100, Math.round(((stats.total - stats.stuckCount) / stats.total) * 100)))
+      : 0;
+    return { highIntent, hasValues, score };
+  }, [leads, stats]);
+
+  const scoreColor = derived.score >= 70 ? 'text-green-500' : derived.score >= 40 ? 'text-amber-500' : 'text-red-500';
+  const scoreDot = derived.score >= 70 ? 'bg-green-400' : derived.score >= 40 ? 'bg-amber-400' : 'bg-red-400';
 
   const kpis = [
-    { label: 'Total Leads',       value: String(stats.total),      dot: 'bg-blue-400',   text: 'text-blue-500' },
-    { label: 'High-Intent Leads', value: String(derived.highIntent), dot: 'bg-green-400',  text: 'text-green-500' },
-    { label: 'Stuck Leads',       value: String(stats.stuckCount),  dot: 'bg-orange-400', text: 'text-orange-500' },
+    { label: 'Opportunity Score', value: `${derived.score}/100`, dot: scoreDot, text: scoreColor },
     {
-      label: derived.hasValues ? 'Revenue at Risk' : 'Opportunities at Risk',
+      label: derived.hasValues ? 'Missed Revenue Opportunities' : 'Missed Opportunities',
       value: derived.hasValues ? `₹${stats.atRiskValue}L` : String(stats.stuckCount),
       dot: 'bg-red-400',
       text: 'text-red-500',
     },
+    { label: 'Follow-up Gaps',         value: String(stats.stuckCount),    dot: 'bg-orange-400', text: 'text-orange-500' },
+    { label: 'Customer Journey Signals', value: String(derived.highIntent), dot: 'bg-blue-400',  text: 'text-blue-500' },
   ];
 
   return (

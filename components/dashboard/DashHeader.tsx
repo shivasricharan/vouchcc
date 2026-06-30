@@ -1,7 +1,7 @@
 'use client';
 
 import { useDashboard } from '@/context/DashboardContext';
-import { Upload, Sun, Moon, ExternalLink, ArrowLeftRight, ArrowLeft, BookOpen, FileQuestion } from 'lucide-react';
+import { Upload, Sun, Moon, ExternalLink, ArrowLeft, BookOpen, FileQuestion } from 'lucide-react';
 
 export default function DashHeader() {
   const { view, setView, dataMode, fileName, uploadedAt, theme, toggleTheme } = useDashboard();
@@ -34,17 +34,7 @@ export default function DashHeader() {
             className="flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
           >
             <ArrowLeft size={12} />
-            <span className="hidden md:inline">Back to Templates</span>
-          </button>
-        )}
-
-        {showBackToTemplates && (
-          <button
-            onClick={() => setView('upload')}
-            className="hidden sm:flex items-center gap-1.5 bg-th-hover border border-th-border text-th-body hover:text-th-heading text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <ArrowLeftRight size={13} />
-            <span>Switch Template</span>
+            <span className="hidden md:inline">Back to Start</span>
           </button>
         )}
 
@@ -64,15 +54,13 @@ export default function DashHeader() {
           <span>Upload Guide</span>
         </button>
 
-        {showBackToTemplates && (
-          <button
-            onClick={() => setView('guide')}
-            className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
-          >
-            <BookOpen size={13} />
-            <span>Guide</span>
-          </button>
-        )}
+        <button
+          onClick={() => setView('guide')}
+          className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
+        >
+          <BookOpen size={13} />
+          <span>How Vouch Works</span>
+        </button>
 
         <a
           href="https://yourvouch.com"
@@ -89,7 +77,7 @@ export default function DashHeader() {
           rel="noopener noreferrer"
           className="hidden md:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
         >
-          Start 14-Day Audit
+          Start Opportunity Audit
         </a>
 
         <button

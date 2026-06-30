@@ -50,7 +50,7 @@ export default function AIInsights() {
     }
 
     if (stats.stuckCount > 0) {
-      list.push({ type: 'warning', body: `${stats.stuckCount} leads stuck for 7+ days — follow-up delays are the biggest visible leak.` });
+      list.push({ type: 'warning', body: `${stats.stuckCount} leads stuck for 7+ days — follow-up delays are the biggest missed opportunity.` });
     }
 
     if (unassigned > 0) {
@@ -58,7 +58,7 @@ export default function AIInsights() {
     }
 
     if (list.length === 0) {
-      list.push({ type: 'positive', body: 'Upload your data to see personalised revenue insights.' });
+      list.push({ type: 'positive', body: 'Upload your data to see personalised opportunity insights.' });
     }
 
     return list.slice(0, 5);
@@ -66,11 +66,14 @@ export default function AIInsights() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-1.5">
         <Lightbulb size={18} className="text-amber-500" />
-        <h2 className="text-th-heading font-bold text-lg">What We Found</h2>
+        <h2 className="text-th-heading font-bold text-lg">Vouch Insights</h2>
         <span className="text-th-muted text-xs ml-1">{stats.total} leads analysed</span>
       </div>
+      <p className="text-th-muted text-xs mb-4">
+        See missed opportunities, follow-up gaps and customer journey signals hidden in your data.
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {insights.map((insight, i) => (

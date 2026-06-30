@@ -128,7 +128,7 @@ export default function UploadGuideView() {
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 flex items-start gap-2.5">
           <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
           <span className="text-th-body text-xs leading-relaxed">
-            If lead value is missing, Vouch shows opportunities at risk instead of revenue at risk.
+            If lead value is missing, Vouch shows missed opportunity counts instead of revenue values.
           </span>
         </div>
       </section>

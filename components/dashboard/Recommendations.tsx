@@ -49,7 +49,7 @@ export default function Recommendations() {
 
   return (
     <div>
-      <h2 className="text-th-heading font-bold text-lg mb-4">What To Do Next</h2>
+      <h2 className="text-th-heading font-bold text-lg mb-4">Suggested Actions</h2>
 
       <div className="space-y-2.5">
         {recs.map((rec, i) => (

@@ -4,35 +4,26 @@ import { useState, useCallback, useEffect } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
 import { detectColumns, mapRowsToLeads, getMappingConfidence, FIELD_DEFS } from '@/lib/fieldMapping';
 import type { ColumnMap } from '@/lib/fieldMapping';
-import type { UniversalLead, TemplateId } from '@/lib/leadTypes';
-import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, Database, AlertTriangle, FileQuestion } from 'lucide-react';
+import type { UniversalLead } from '@/lib/leadTypes';
+import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, AlertTriangle } from 'lucide-react';
 
 type ParsedRow = Record<string, string>;
-type Step = 'landing' | 'mapping' | 'preview';
+type Step = 'landing' | 'processing' | 'mapping' | 'preview';
 
-interface TemplateCard {
-  id: string;
-  templateId: TemplateId;
-  name: string;
-  description: string;
-  icon: string;
-}
+const WORKS_WITH = ['CRM exports', 'Website enquiries', 'Google Sheets', 'Excel', 'ERP exports', 'Lead sheets', 'Sales reports', 'Any structured CSV'];
 
-const TEMPLATE_CARDS: TemplateCard[] = [
-  { id: 'generic', templateId: 'service', name: 'Generic Business', description: 'Standard sales pipeline', icon: '🏢' },
-  { id: 'saas', templateId: 'saas', name: 'SaaS', description: 'Software subscriptions', icon: '💻' },
-  { id: 'agency', templateId: 'agency', name: 'Agency / Consulting', description: 'Client project pipeline', icon: '📊' },
-  { id: 'interior', templateId: 'interior', name: 'Interior / Architecture', description: 'Design project pipeline', icon: '🏠' },
-  { id: 'healthcare', templateId: 'healthcare', name: 'Clinic / Healthcare', description: 'Patient journey', icon: '🏥' },
-  { id: 'realestate', templateId: 'realestate', name: 'Real Estate', description: 'Property sales pipeline', icon: '🏗️' },
-  { id: 'education', templateId: 'education', name: 'Coaching / Education', description: 'Student enrollment', icon: '🎓' },
-  { id: 'events', templateId: 'events', name: 'Events / Exhibitions', description: 'Event booking pipeline', icon: '🎪' },
-  { id: 'retail', templateId: 'retail', name: 'Retail / Local Business', description: 'Local business leads', icon: '🛍️' },
+const PROCESSING_ITEMS = ['CSV Uploaded', 'Columns Understood', 'Records Processed', 'Building Opportunity Insights…'];
+
+const MAPPING_EXAMPLES = [
+  { from: 'Lead Status', to: 'Opportunity Stage' },
+  { from: 'Phone', to: 'Contact Number' },
+  { from: 'Remarks', to: 'Conversation Notes' },
 ];
 
 export default function UploadCSVView() {
   const { loadLiveData, loadSampleData, missingFieldsWarning, setView } = useDashboard();
   const [step, setStep] = useState<Step>('landing');
+  const [processingStep, setProcessingStep] = useState(0);
   const [rawRows, setRawRows] = useState<ParsedRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [colMap, setColMap] = useState<ColumnMap>({});
@@ -46,6 +37,16 @@ export default function UploadCSVView() {
   useEffect(() => {
     import('@/data/sampleData').then(mod => setSampleDataModule(mod)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (step !== 'processing') return;
+    if (processingStep >= PROCESSING_ITEMS.length - 1) {
+      const t = setTimeout(() => setStep('mapping'), 600);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setProcessingStep(s => s + 1), 450);
+    return () => clearTimeout(t);
+  }, [step, processingStep]);
 
   const handleFile = useCallback(async (file: File) => {
     setError('');
@@ -79,7 +80,8 @@ export default function UploadCSVView() {
       setRawRows(rows);
       setColMap(detected);
       setConfidence(getMappingConfidence(hdrs, detected));
-      setStep('mapping');
+      setProcessingStep(0);
+      setStep('processing');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to parse file.');
     } finally {
@@ -93,11 +95,11 @@ export default function UploadCSVView() {
     if (file) handleFile(file);
   }, [handleFile]);
 
-  function loadSample(card: TemplateCard) {
+  function loadSample() {
     if (!sampleDataModule) return;
-    const leads = sampleDataModule.getSampleLeads(card.id);
+    const leads = sampleDataModule.getSampleLeads('generic');
     if (leads.length > 0) {
-      loadSampleData(leads, card.name, card.templateId);
+      loadSampleData(leads, 'Sample Dataset', 'service');
     }
   }
 
@@ -115,15 +117,7 @@ export default function UploadCSVView() {
   const mappedCount = Object.values(colMap).filter(Boolean).length;
 
   return (
-    <div className="p-5 max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center pt-4">
-        <h1 className="text-th-heading font-bold text-2xl mb-2">Vouch Insights</h1>
-        <p className="text-th-body text-sm max-w-xl mx-auto leading-relaxed">
-          Upload a CSV or explore sample business data to find revenue leaks, stuck leads, missed follow-ups, and conversion opportunities.
-        </p>
-      </div>
-
+    <div className="p-5 max-w-5xl mx-auto space-y-10 pb-12">
       {/* Missing fields warning */}
       {missingFieldsWarning && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3">
@@ -134,100 +128,134 @@ export default function UploadCSVView() {
 
       {step === 'landing' && (
         <>
-          {/* Two primary options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Explore Sample Data */}
-            <div className="bg-th-surface border border-th-border rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/15 flex items-center justify-center">
-                  <Database size={20} className="text-blue-500" />
-                </div>
-                <div>
-                  <div className="text-th-heading font-bold text-sm">Explore Sample Data</div>
-                  <div className="text-th-muted text-xs">Try with pre-loaded industry data</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {TEMPLATE_CARDS.map(card => (
-                  <button
-                    key={card.id}
-                    onClick={() => loadSample(card)}
-                    disabled={!sampleDataModule}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-th-hover border border-th-border hover:border-blue-500/30 text-left transition-colors disabled:opacity-50"
-                  >
-                    <span className="text-lg shrink-0">{card.icon}</span>
-                    <div className="min-w-0">
-                      <div className="text-th-heading text-xs font-medium truncate">{card.name}</div>
-                      <div className="text-th-muted text-[10px] truncate">{card.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Upload Your CSV */}
-            <div className="bg-th-surface border border-th-border rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-green-600/15 flex items-center justify-center">
-                  <Upload size={20} className="text-green-500" />
-                </div>
-                <div>
-                  <div className="text-th-heading font-bold text-sm">Upload Your CSV</div>
-                  <div className="text-th-muted text-xs">Analyse your own lead data</div>
-                </div>
-              </div>
-
-              <div
-                onDrop={handleDrop} onDragOver={e => e.preventDefault()}
-                className="border-2 border-dashed border-th-border rounded-xl p-8 text-center hover:border-blue-500/50 transition-colors cursor-pointer bg-th-hover/30"
+          {/* Hero */}
+          <div className="text-center pt-6">
+            <h1 className="text-th-heading font-bold text-3xl sm:text-4xl mb-4 leading-tight max-w-2xl mx-auto">
+              Discover missed revenue opportunities in your existing business data.
+            </h1>
+            <p className="text-th-body text-sm sm:text-base max-w-xl mx-auto leading-relaxed mb-7">
+              Upload a CSV from your CRM, ERP, website, Google Sheets, Excel or lead management system. Vouch automatically understands your data and highlights opportunities that deserve attention.
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <button
                 onClick={() => document.getElementById('csv-input')?.click()}
+                className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
               >
-                <Upload size={28} className="mx-auto text-th-muted mb-3" />
-                <div className="text-th-heading font-semibold text-sm mb-1">Drop your file here or click to browse</div>
-                <div className="text-th-muted text-xs mb-2">Supports .csv, .xlsx, .xls</div>
-                <div className="text-th-faint text-[10px]">Your data never leaves your browser</div>
-                {loading && <div className="text-blue-500 text-xs mt-3 animate-pulse">Parsing file…</div>}
-                {error && <div className="text-red-500 text-xs mt-3">{error}</div>}
-                <input id="csv-input" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-              </div>
-
-              {/* Inline helper */}
-              <div className="mt-3 flex items-center justify-center gap-2 text-th-muted text-[11px]">
-                <span>Not sure what to upload? Use any lead sheet, enquiry sheet, CRM export, or Google Sheet CSV.</span>
-                <button onClick={() => setView('upload-guide')} className="text-blue-500 hover:text-blue-400 font-medium whitespace-nowrap transition-colors">
-                  View Upload Guide
-                </button>
-              </div>
+                <Upload size={16} /> Upload CSV
+              </button>
+              <button
+                onClick={() => setView('guide')}
+                className="bg-th-hover border border-th-border text-th-body hover:text-th-heading text-sm font-semibold px-6 py-3 rounded-lg transition-colors"
+              >
+                How Vouch Works
+              </button>
             </div>
           </div>
 
-          {/* Audit CTA */}
+          {/* Works with */}
+          <div>
+            <div className="text-center text-th-muted text-xs font-semibold uppercase tracking-wide mb-3">Works with</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl mx-auto">
+              {WORKS_WITH.map(w => (
+                <div key={w} className="bg-th-surface border border-th-border rounded-lg px-3 py-3 text-center text-th-body text-xs font-medium">
+                  {w}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Upload dropzone */}
+          <div className="bg-th-surface border border-th-border rounded-xl p-6 max-w-xl mx-auto w-full">
+            <div
+              onDrop={handleDrop} onDragOver={e => e.preventDefault()}
+              className="border-2 border-dashed border-th-border rounded-xl p-8 text-center hover:border-blue-500/50 transition-colors cursor-pointer bg-th-hover/30"
+              onClick={() => document.getElementById('csv-input')?.click()}
+            >
+              <Upload size={28} className="mx-auto text-th-muted mb-3" />
+              <div className="text-th-heading font-semibold text-sm mb-1">Drop your file here or click to browse</div>
+              <div className="text-th-muted text-xs mb-2">Supports .csv, .xlsx, .xls</div>
+              <div className="text-th-faint text-[10px]">Your data never leaves your browser</div>
+              {loading && <div className="text-blue-500 text-xs mt-3 animate-pulse">Parsing file…</div>}
+              {error && <div className="text-red-500 text-xs mt-3">{error}</div>}
+              <input id="csv-input" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            </div>
+
+            {/* Inline helper */}
+            <div className="mt-3 flex items-center justify-center gap-2 text-th-muted text-[11px] flex-wrap text-center">
+              <span>Not sure what to upload? Use any lead sheet, enquiry sheet, CRM export, or Google Sheet CSV.</span>
+              <button onClick={() => setView('upload-guide')} className="text-blue-500 hover:text-blue-400 font-medium whitespace-nowrap transition-colors">
+                View Upload Guide
+              </button>
+            </div>
+          </div>
+
+          {/* Try a sample dataset */}
+          <div className="text-center">
+            <button
+              onClick={loadSample}
+              disabled={!sampleDataModule}
+              className="bg-th-hover border border-th-border text-th-body hover:text-th-heading text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Try a Sample Dataset
+            </button>
+            <div className="text-th-faint text-xs mt-2">Perfect if you don&apos;t have a CSV available.</div>
+          </div>
+
+          {/* Final CTA */}
           <div className="bg-th-surface border border-blue-500/15 rounded-xl p-6 text-center">
-            <div className="text-th-heading font-bold text-sm mb-1">Want this for your real business?</div>
+            <div className="text-th-heading font-bold text-sm mb-1">Ready to discover opportunities in your business?</div>
             <p className="text-th-muted text-xs mb-3 max-w-md mx-auto">
-              Start with a 14-Day Revenue Leak Audit. Share a CSV, Google Sheet, or sample business flow and Vouch will show where leads are leaking.
+              Start with a free Opportunity Audit. Share a CSV, Google Sheet, or business data and Vouch will show where opportunities are hiding.
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
               <a href="https://yourvouch.com/#audit" target="_blank" rel="noopener noreferrer"
                 className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">
-                Start 14-Day Audit
+                Start Opportunity Audit
               </a>
               <a href="https://yourvouch.com" target="_blank" rel="noopener noreferrer"
                 className="text-th-muted hover:text-th-heading text-xs transition-colors">
-                Back to Vouch Website
+                Visit Vouch
               </a>
             </div>
           </div>
+
+          {/* Footer disclaimer */}
+          <div className="text-center text-th-faint text-[10px] space-y-0.5">
+            <div>Your data stays on your device during this demo.</div>
+            <div>Upload only sample or non-sensitive data.</div>
+          </div>
         </>
+      )}
+
+      {/* Processing */}
+      {step === 'processing' && (
+        <div className="max-w-md mx-auto py-20 text-center space-y-4">
+          {PROCESSING_ITEMS.map((item, i) => (
+            <div
+              key={item}
+              className={`flex items-center gap-3 justify-center transition-opacity duration-500 ${i <= processingStep ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+              <span className="text-th-heading text-sm font-medium">{item}</span>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Mapping */}
       {step === 'mapping' && (
         <div className="space-y-4">
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-1">
               <FileSpreadsheet size={16} className="text-blue-500" />
-              <span className="text-blue-500 text-sm font-semibold">Smart CSV Mapping</span>
+              <span className="text-blue-500 text-sm font-semibold">How Vouch Understood Your Data</span>
+            </div>
+            <div className="text-th-muted text-[11px] mb-3">
+              {MAPPING_EXAMPLES.map((m, i) => (
+                <span key={m.from}>
+                  {m.from} → {m.to}{i < MAPPING_EXAMPLES.length - 1 ? ' · ' : ''}
+                </span>
+              ))}
             </div>
             <div className="grid grid-cols-4 gap-3 text-center">
               {[

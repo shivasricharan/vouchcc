@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vouch Insights | Revenue Leak Analysis',
-  description: 'Upload a CSV or explore sample business data to find revenue leaks, stuck leads, missed follow-ups, and conversion opportunities.',
+  title: 'Vouch Opportunity Analyzer | Upload Your Data',
+  description: 'Upload your existing business data and discover missed revenue opportunities, follow-up gaps, customer journey signals and actionable insights in minutes.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

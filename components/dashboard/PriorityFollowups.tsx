@@ -46,14 +46,14 @@ export default function PriorityFollowups() {
     <div>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-        <h2 className="text-th-heading font-bold text-lg">Priority Follow-ups</h2>
+        <h2 className="text-th-heading font-bold text-lg">Follow-up Gaps</h2>
         <span className="bg-amber-500/15 text-amber-500 text-xs font-bold px-2 py-0.5 rounded-full">
           {priority.length}
         </span>
       </div>
 
-      <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-th-surface border border-th-border rounded-xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[480px]">
           <thead>
             <tr className="border-b border-th-border bg-th-hover">
               {['Lead', 'Stage', 'Issue', 'Next Action'].map(col => (

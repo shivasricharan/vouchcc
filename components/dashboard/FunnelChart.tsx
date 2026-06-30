@@ -48,7 +48,10 @@ export default function FunnelChart() {
   }, [leads]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div>
+      <h2 className="text-th-heading font-bold text-lg mb-1">Customer Journey Signals</h2>
+      <p className="text-th-muted text-xs mb-4">Stage drop-off, source quality, and follow-up timing across your pipeline.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Stage Drop-Off */}
       <div className="bg-th-surface border border-th-border rounded-xl p-5">
         <div className="mb-4">
@@ -131,6 +134,7 @@ export default function FunnelChart() {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
