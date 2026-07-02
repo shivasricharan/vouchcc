@@ -1,107 +1,84 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
-import {
-  ArrowLeft, Download,
-  Upload, CheckCircle2, Wand2, Gauge, Lightbulb, ListChecks,
-  Database, Sheet, FileSpreadsheet, Server, Globe, BarChart3, Users, FileText,
-} from 'lucide-react';
+import { X, Upload, Wand2, Gauge, Lightbulb, ListChecks, BarChart3 } from 'lucide-react';
 
 const CARDS = [
-  { icon: Upload, title: 'Choose a CSV', body: 'Upload any structured CSV from your CRM, Excel, ERP, Google Sheets or website enquiries.' },
-  { icon: CheckCircle2, title: 'No Perfect Format Needed', body: "Don't worry if your column names are different. Vouch automatically understands common business fields." },
-  { icon: Wand2, title: 'AI Mapping', body: 'Vouch maps your columns into a standard business structure.' },
-  { icon: Gauge, title: 'Opportunity Score', body: 'Your business receives an Opportunity Score based on the uploaded data.' },
-  { icon: Lightbulb, title: 'Vouch Insights', body: 'Discover missed revenue opportunities, follow-up gaps and customer journey signals.' },
-  { icon: ListChecks, title: 'Suggested Actions', body: 'Receive practical recommendations on what deserves attention first.' },
-];
-
-const WORKS_WITH = [
-  { icon: Database, label: 'CRM Exports' },
-  { icon: Sheet, label: 'Google Sheets' },
-  { icon: FileSpreadsheet, label: 'Excel' },
-  { icon: Server, label: 'ERP Exports' },
-  { icon: Globe, label: 'Website Enquiries' },
-  { icon: BarChart3, label: 'Sales Reports' },
-  { icon: Users, label: 'Lead Management Tools' },
-  { icon: FileText, label: 'Any Structured CSV' },
+  { icon: Upload, title: 'Upload your data', body: 'Upload a CSV, Excel export or Google Sheet.' },
+  { icon: Wand2, title: 'AI understands your data', body: 'Vouch automatically understands common business fields.' },
+  { icon: Gauge, title: 'Opportunity Score', body: 'See how healthy your opportunities are.' },
+  { icon: Lightbulb, title: 'Vouch Insights', body: 'Understand where opportunities deserve attention.' },
+  { icon: ListChecks, title: 'Suggested Actions', body: 'Receive practical recommendations.' },
+  { icon: BarChart3, title: 'Opportunity Audit', body: 'If you need deeper analysis, start a 14-day Opportunity Audit.' },
 ];
 
 export default function UploadGuideView() {
-  const { setView } = useDashboard();
+  const { setShowGuide, loadSampleData } = useDashboard();
+  const [sampleModule, setSampleModule] = useState<typeof import('@/data/sampleData') | null>(null);
+
+  useEffect(() => {
+    import('@/data/sampleData').then(mod => setSampleModule(mod)).catch(() => {});
+  }, []);
+
+  function loadSample() {
+    if (!sampleModule) return;
+    const leads = sampleModule.getSampleLeads('generic');
+    if (leads.length > 0) {
+      loadSampleData(leads, 'Sample Dataset', 'service');
+      setShowGuide(false);
+    }
+  }
 
   return (
-    <div className="p-6 pb-12 max-w-4xl mx-auto">
-      {/* Back + Title */}
-      <button
-        onClick={() => setView('upload')}
-        className="flex items-center gap-1.5 text-th-muted hover:text-th-body text-xs mb-4 transition-colors"
-      >
-        <ArrowLeft size={12} /> Back to Upload
-      </button>
+    <>
+      <div
+        className="fixed inset-0 bg-black/60 z-40"
+        onClick={() => setShowGuide(false)}
+      />
+      <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-th-elevated border-l border-th-border z-50 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-th-border shrink-0">
+          <h2 className="text-th-heading font-bold text-base">How it Works</h2>
+          <button
+            onClick={() => setShowGuide(false)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-th-muted hover:text-th-heading hover:bg-th-hover transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-      <h1 className="text-th-heading font-bold text-2xl mb-2">Before You Upload</h1>
-      <p className="text-th-body text-sm max-w-xl leading-relaxed mb-8">
-        Here&apos;s what happens when you upload your business data — from raw CSV to clear opportunity insights.
-      </p>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <p className="text-th-body text-sm leading-relaxed">
+            Upload your business data and Vouch will analyze it to surface missed opportunities — in under a minute.
+          </p>
 
-      {/* Six cards */}
-      <section className="mb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {CARDS.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="bg-th-surface border border-th-border rounded-xl p-5 hover:border-blue-500/20 transition-colors">
-              <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
-                <Icon size={16} className="text-blue-500" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {CARDS.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="bg-th-surface border border-th-border rounded-xl p-4 hover:border-blue-500/20 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
+                  <Icon size={14} className="text-blue-500" />
+                </div>
+                <div className="text-th-heading font-semibold text-sm mb-1">{title}</div>
+                <div className="text-th-body text-xs leading-relaxed">{body}</div>
               </div>
-              <div className="text-th-heading font-semibold text-sm mb-1">{title}</div>
-              <div className="text-th-body text-xs leading-relaxed">{body}</div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="border-t border-th-border pt-5">
+            <div className="text-th-heading font-semibold text-sm mb-1">Try Sample Dataset</div>
+            <p className="text-th-muted text-xs mb-3">
+              Explore the Opportunity Analyzer using a sample business dataset before uploading your own data.
+            </p>
+            <button
+              onClick={loadSample}
+              disabled={!sampleModule}
+              className="inline-flex items-center gap-2 bg-th-hover border border-th-border rounded-lg px-4 py-2.5 hover:border-blue-500/30 transition-colors text-th-body text-xs font-medium disabled:opacity-50"
+            >
+              Try Sample Dataset
+            </button>
+          </div>
         </div>
-      </section>
-
-      {/* Works With */}
-      <section className="mb-10">
-        <h2 className="text-th-heading font-semibold text-sm mb-3">Works With</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {WORKS_WITH.map(({ icon: Icon, label }) => (
-            <div key={label} className="bg-th-surface border border-th-border rounded-lg px-3 py-3.5 flex flex-col items-center text-center gap-2 hover:border-blue-500/20 transition-colors">
-              <Icon size={16} className="text-blue-500 shrink-0" />
-              <span className="text-th-body text-xs font-medium">{label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Download sample dataset */}
-      <section className="mb-10">
-        <h2 className="text-th-heading font-semibold text-sm mb-1">Download Sample CSV</h2>
-        <p className="text-th-muted text-xs mb-3">Perfect if you want to explore Vouch before uploading your own business data.</p>
-        <a
-          href="/samples/generic-sample.csv"
-          download
-          className="inline-flex items-center gap-2.5 bg-th-surface border border-th-border rounded-lg px-4 py-3 hover:border-blue-500/30 transition-colors"
-        >
-          <Download size={14} className="text-blue-500 shrink-0" />
-          <span className="text-th-body text-xs font-medium">Download Sample Dataset</span>
-        </a>
-      </section>
-
-      {/* Footer nav */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pt-4 border-t border-th-border">
-        <button
-          onClick={() => setView('upload')}
-          className="flex items-center gap-2 bg-th-hover border border-th-border text-th-body text-sm font-medium px-4 py-2.5 rounded-lg transition-colors hover:text-th-heading"
-        >
-          <ArrowLeft size={14} /> Back to Upload
-        </button>
-        <button
-          onClick={() => setView('upload')}
-          className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
-        >
-          Upload My CSV
-        </button>
       </div>
-    </div>
+    </>
   );
 }

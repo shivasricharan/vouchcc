@@ -5,17 +5,26 @@ import { computeStats } from '@/lib/computeStats';
 import { detectTemplate } from '@/lib/fieldMapping';
 import type { UniversalLead, ComputedStats, TemplateId } from '@/lib/leadTypes';
 
-export type ViewId = 'dashboard' | 'upload' | 'guide' | 'upload-guide';
+export type ViewId = 'dashboard' | 'upload' | 'guide';
+
+export interface MappingMeta {
+  columns: number;
+  mapped: number;
+  confidence: number;
+  examples: { from: string; to: string }[];
+}
 
 interface DashboardState {
   view: ViewId;
   setView: (v: ViewId) => void;
+  showGuide: boolean;
+  setShowGuide: (v: boolean) => void;
   leads: UniversalLead[];
   stats: ComputedStats;
   dataMode: 'demo' | 'live';
   fileName?: string;
   uploadedAt?: Date;
-  loadLiveData: (rows: UniversalLead[], fileName: string, confidence: number) => void;
+  loadLiveData: (rows: UniversalLead[], fileName: string, confidence: number, meta?: MappingMeta) => void;
   loadSampleData: (leads: UniversalLead[], templateName: string, templateId: TemplateId) => void;
   loadDemoData: () => void;
   showUpload: boolean;
@@ -29,6 +38,7 @@ interface DashboardState {
   autoFilledFields: number;
   detectedColumns: number;
   missingFieldsWarning: string;
+  mappingMeta: MappingMeta | null;
 }
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -41,6 +51,7 @@ export function useDashboard(): DashboardState {
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [view, setView] = useState<ViewId>('upload');
+  const [showGuide, setShowGuide] = useState(false);
   const [leads, setLeads] = useState<UniversalLead[]>([]);
   const [dataMode, setDataMode] = useState<'demo' | 'live'>('demo');
   const [fileName, setFileName] = useState<string | undefined>();
@@ -52,6 +63,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [autoFilledFields, setAutoFilledFields] = useState(0);
   const [detectedColumns, setDetectedColumns] = useState(0);
   const [missingFieldsWarning, setMissingFieldsWarning] = useState('');
+  const [mappingMeta, setMappingMeta] = useState<MappingMeta | null>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
@@ -75,13 +87,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const stats = useMemo(() => computeStats(leads, templateId), [leads, templateId]);
 
-  const loadLiveData = useCallback((rows: UniversalLead[], name: string, confidence: number) => {
+  const loadLiveData = useCallback((rows: UniversalLead[], name: string, confidence: number, meta?: MappingMeta) => {
     setLeads(rows);
     setDataMode('live');
     setFileName(name);
     setUploadedAt(new Date());
     setShowUpload(false);
     setMappingConfidence(confidence);
+    setMappingMeta(meta ?? null);
     setView('dashboard');
 
     const hasEmptyFields = rows.some(r => r.client === `Lead 1` || r.stage === 'New Inquiry');
@@ -102,6 +115,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setUploadedAt(undefined);
     setTemplateId(tid);
     setMappingConfidence(100);
+    setMappingMeta(null);
     setMissingFieldsWarning('');
     setView('dashboard');
   }, []);
@@ -117,12 +131,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setAutoFilledFields(0);
     setDetectedColumns(0);
     setMissingFieldsWarning('');
+    setMappingMeta(null);
     setView('upload');
   }, []);
 
   return (
     <DashboardContext.Provider value={{
       view, setView,
+      showGuide, setShowGuide,
       leads, stats,
       dataMode, fileName, uploadedAt,
       loadLiveData, loadSampleData, loadDemoData,
@@ -131,6 +147,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       theme, toggleTheme,
       mappingConfidence, mappedFields, autoFilledFields, detectedColumns,
       missingFieldsWarning,
+      mappingMeta,
     }}>
       {children}
     </DashboardContext.Provider>

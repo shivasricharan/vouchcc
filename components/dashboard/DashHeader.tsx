@@ -4,10 +4,10 @@ import { useDashboard } from '@/context/DashboardContext';
 import { Upload, Sun, Moon, ExternalLink, ArrowLeft, BookOpen, FileQuestion } from 'lucide-react';
 
 export default function DashHeader() {
-  const { view, setView, dataMode, fileName, uploadedAt, theme, toggleTheme } = useDashboard();
+  const { view, setView, setShowGuide, dataMode, fileName, uploadedAt, theme, toggleTheme } = useDashboard();
 
   const uploadTimeStr = uploadedAt?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  const showBackToTemplates = view === 'dashboard' || view === 'guide' || view === 'upload-guide';
+  const showBackToTemplates = view === 'dashboard' || view === 'guide';
 
   return (
     <header className="h-14 bg-th-elevated border-b border-th-border flex items-center px-5 gap-3 shrink-0">
@@ -47,11 +47,11 @@ export default function DashHeader() {
         </button>
 
         <button
-          onClick={() => setView('upload-guide')}
+          onClick={() => setShowGuide(true)}
           className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
         >
           <FileQuestion size={13} />
-          <span>Before You Upload</span>
+          <span>How it Works</span>
         </button>
 
         <button

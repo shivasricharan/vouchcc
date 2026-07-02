@@ -41,8 +41,50 @@ function AuditCTA() {
   );
 }
 
+function MappingCard() {
+  const { mappingMeta, mappingConfidence } = useDashboard();
+  if (!mappingMeta) return null;
+
+  return (
+    <div className="bg-th-surface border border-th-border rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-th-heading font-semibold text-sm">How Vouch Understood Your Data</span>
+        <span className="text-green-500 text-[10px] font-bold bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full">
+          {mappingConfidence}% confidence
+        </span>
+      </div>
+      <p className="text-th-muted text-xs mb-4">
+        Vouch automatically standardized similar business fields from your upload.
+      </p>
+      <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+        {[
+          { label: 'Columns detected', value: String(mappingMeta.columns) },
+          { label: 'Fields mapped', value: String(mappingMeta.mapped) },
+          { label: 'Confidence', value: `${mappingMeta.confidence}%` },
+        ].map(s => (
+          <div key={s.label}>
+            <div className="text-th-heading font-bold text-lg">{s.value}</div>
+            <div className="text-th-muted text-[10px]">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      {mappingMeta.examples.length > 0 && (
+        <div className="space-y-1.5 pt-3 border-t border-th-border">
+          {mappingMeta.examples.map((ex, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <span className="text-th-faint font-mono">{ex.from}</span>
+              <span className="text-th-faint">→</span>
+              <span className="text-th-body">{ex.to}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DashboardContent() {
-  const { view, showUpload } = useDashboard();
+  const { view, showUpload, showGuide } = useDashboard();
 
   return (
     <div className="flex flex-col h-screen bg-th-page overflow-hidden">
@@ -53,6 +95,7 @@ function DashboardContent() {
             <KPICards />
             <AIInsights />
             <Recommendations />
+            <MappingCard />
 
             <div className="flex items-center gap-3 pt-2">
               <div className="h-px flex-1 bg-th-border" />
@@ -74,9 +117,9 @@ function DashboardContent() {
         )}
         {view === 'upload' && <UploadCSVView />}
         {view === 'guide'  && <GuideView />}
-        {view === 'upload-guide' && <UploadGuideView />}
       </main>
       {showUpload && view !== 'upload' && <UploadModal />}
+      {showGuide && <UploadGuideView />}
     </div>
   );
 }
