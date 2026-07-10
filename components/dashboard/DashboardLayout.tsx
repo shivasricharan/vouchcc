@@ -8,7 +8,7 @@ import KPICards from './KPICards';
 import FunnelChart from './FunnelChart';
 import AIInsights from './AIInsights';
 import PriorityFollowups from './PriorityFollowups';
-import Recommendations from './Recommendations';
+import NextActionsPanel from './NextActionsPanel';
 import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
@@ -48,29 +48,29 @@ function AnnouncementBanner() {
   );
 }
 
-function AuditCTA() {
+function FinalCTA() {
   return (
-    <div className="bg-th-surface border border-blue-500/15 rounded-xl p-6 text-center">
-      <div className="text-th-heading font-bold text-sm mb-1">Ready to discover opportunities in your business?</div>
-      <p className="text-th-muted text-xs mb-3 max-w-md mx-auto">
-        Start with a free Opportunity Audit. Share a CSV, Google Sheet, or business data and Vouch will show where opportunities need attention.
+    <div className="bg-th-surface border border-blue-500/20 rounded-xl p-6 text-center">
+      <div className="text-th-heading font-bold text-base mb-1">Ready to analyse your own business?</div>
+      <p className="text-th-muted text-sm mb-4 max-w-md mx-auto">
+        Upload your own CSV and Vouch will map your columns automatically, score your pipeline, and surface what&apos;s silently costing you revenue.
       </p>
       <div className="flex items-center justify-center gap-3 flex-wrap">
         <a
-          href="https://yourvouch.com/#audit"
+          href="https://yourvouch.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
         >
-          Start Opportunity Audit
+          Talk to Us
         </a>
         <a
           href="https://yourvouch.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-th-muted hover:text-th-heading text-xs transition-colors"
+          className="text-th-muted hover:text-th-heading text-sm transition-colors"
         >
-          Visit Vouch
+          Back to Vouch →
         </a>
       </div>
     </div>
@@ -130,9 +130,18 @@ function DashboardContent() {
         {view === 'dashboard' && (
           <div className="p-6 max-w-6xl mx-auto space-y-8">
             <KPICards />
-            <AIInsights />
-            <Recommendations />
-            <MappingCard />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <AIInsights />
+                <PriorityFollowups />
+              </div>
+              <div className="lg:col-span-1">
+                <div className="sticky top-4">
+                  <NextActionsPanel />
+                </div>
+              </div>
+            </div>
 
             <div className="flex items-center gap-3 pt-2">
               <div className="h-px flex-1 bg-th-border" />
@@ -140,9 +149,9 @@ function DashboardContent() {
               <div className="h-px flex-1 bg-th-border" />
             </div>
 
-            <PriorityFollowups />
             <FunnelChart />
-            <AuditCTA />
+            <MappingCard />
+            <FinalCTA />
             <div className="text-center py-3 space-y-2">
               <div className="text-th-faint text-[10px] space-y-0.5">
                 <div>Your uploaded data stays private during this session.</div>

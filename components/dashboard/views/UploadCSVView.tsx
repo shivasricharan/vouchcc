@@ -8,25 +8,23 @@ import type { ColumnMap } from '@/lib/fieldMapping';
 import type { UniversalLead } from '@/lib/leadTypes';
 import { Upload, FileSpreadsheet, CheckCircle2, ArrowRight, AlertTriangle } from 'lucide-react';
 
-function GithubIcon({ size = 14, className = '' }: { size?: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-    </svg>
-  );
-}
-
 type ParsedRow = Record<string, string>;
 type Step = 'landing' | 'processing' | 'mapping' | 'preview';
 
-const WORKS_WITH = ['CRM exports', 'Website enquiries', 'Google Sheets', 'Excel', 'ERP exports', 'Lead sheets', 'Sales reports', 'Any structured CSV'];
-
 const PROCESSING_ITEMS = [
-  'Understanding your data...',
-  'Mapping business fields...',
-  'Calculating Opportunity Score...',
-  'Generating Vouch Insights...',
-  'Preparing Suggested Actions...',
+  'Reading data and understanding your pipeline...',
+  'Finding follow-up gaps and stuck deals...',
+  'Identifying opportunities at risk...',
+  'Generating recommendations...',
+];
+
+const DATA_SOURCES = [
+  { icon: '📊', label: 'CSV / Excel', available: true },
+  { icon: '📋', label: 'Google Sheets', available: true },
+  { icon: '🔗', label: 'CRM exports', available: true },
+  { icon: '💬', label: 'WhatsApp / DMs', available: false },
+  { icon: '📧', label: 'Email / Inbox', available: false },
+  { icon: '🏢', label: 'Direct CRM sync', available: false },
 ];
 
 export default function UploadCSVView() {
@@ -148,158 +146,105 @@ export default function UploadCSVView() {
       {step === 'landing' && (
         <>
           {/* Hero */}
-          <div className="text-center pt-6">
+          <div className="text-center pt-8 pb-2">
             <h1 className="text-th-heading font-bold text-3xl sm:text-4xl mb-3 leading-tight max-w-2xl mx-auto">
-              Vouch Opportunity Analyzer
+              See how Vouch turns business data into decisions.
             </h1>
-            <p className="text-th-body text-sm sm:text-base max-w-xl mx-auto leading-relaxed mb-4">
-              Upload your business data to discover missed revenue opportunities, follow-up gaps and where your business needs attention.
+            <p className="text-th-muted text-sm max-w-lg mx-auto leading-relaxed">
+              Upload a CSV or explore the sample business to generate insights.
             </p>
-            <p className="text-th-muted text-xs max-w-md mx-auto leading-relaxed mb-7">
-              Don&apos;t worry if your data looks different. Vouch automatically understands common business fields and standardizes your data before analysis.
-            </p>
-            <div className="flex items-center justify-center gap-3 flex-wrap mb-4">
-              <button
-                onClick={() => document.getElementById('csv-input')?.click()}
-                className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Upload size={16} /> Upload CSV
-              </button>
-              <button
-                onClick={loadSample}
-                disabled={!sampleDataModule}
-                className="bg-th-hover border border-th-border text-th-body hover:text-th-heading text-sm font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Try Sample Dataset
-              </button>
-            </div>
-            <div className="flex items-center justify-center gap-4 flex-wrap text-xs">
-              <button
-                onClick={() => setShowGuide(true)}
-                className="text-th-muted hover:text-th-heading transition-colors"
-              >
-                How it Works
-              </button>
-              <span className="text-th-faint/40">·</span>
-              <a
-                href="https://github.com/yourvouch/vouch-starter-kit"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-th-muted hover:text-th-heading transition-colors"
-              >
-                <GithubIcon size={12} /> Open Source on GitHub
-              </a>
+          </div>
+
+          {/* Two CTA cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <button
+              onClick={loadSample}
+              disabled={!sampleDataModule}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl p-6 text-left transition-colors group"
+            >
+              <div className="text-2xl mb-3">📈</div>
+              <div className="font-bold text-base mb-1">Explore Sample Demo</div>
+              <p className="text-blue-100/80 text-sm leading-relaxed">
+                See a real pipeline analysis — insights, follow-up gaps, and next actions — using sample business data.
+              </p>
+              <div className="mt-4 text-blue-100 text-xs font-semibold flex items-center gap-1">
+                Start instantly <ArrowRight size={12} />
+              </div>
+            </button>
+
+            <div
+              className="bg-th-surface border border-th-border rounded-xl p-6 text-left hover:border-blue-500/30 transition-colors cursor-pointer group"
+              onClick={() => document.getElementById('csv-input')?.click()}
+              onDrop={handleDrop}
+              onDragOver={e => e.preventDefault()}
+            >
+              <div className="text-2xl mb-3">📁</div>
+              <div className="text-th-heading font-bold text-base mb-1">Upload My CSV</div>
+              <p className="text-th-muted text-sm leading-relaxed">
+                Bring your own lead sheet, CRM export, or Google Sheet. Vouch maps your columns automatically.
+              </p>
+              <div className="mt-4 text-blue-500 text-xs font-semibold flex items-center gap-1">
+                Drop file or click to browse <ArrowRight size={12} />
+              </div>
+              {loading && <div className="text-blue-500 text-xs mt-2 animate-pulse">Parsing file…</div>}
+              {error && <div className="text-red-500 text-xs mt-2">{error}</div>}
+              <input id="csv-input" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             </div>
           </div>
 
-          {/* Works with */}
-          <div>
-            <div className="text-center text-th-muted text-xs font-semibold uppercase tracking-wide mb-3">Works with</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl mx-auto">
-              {WORKS_WITH.map(w => (
-                <div key={w} className="bg-th-surface border border-th-border rounded-lg px-3 py-3 text-center text-th-body text-xs font-medium">
-                  {w}
+          {/* Data sources */}
+          <div className="max-w-2xl mx-auto">
+            <div className="text-th-muted text-xs font-semibold uppercase tracking-wide mb-3">Start with the data you already have.</div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+              {DATA_SOURCES.map(s => (
+                <div key={s.label} className={`bg-th-surface border rounded-lg px-2 py-3 text-center ${s.available ? 'border-th-border' : 'border-th-border opacity-50'}`}>
+                  <div className="text-xl mb-1">{s.icon}</div>
+                  <div className="text-th-body text-[10px] font-medium leading-tight">{s.label}</div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Use It Your Way */}
-          <div>
-            <div className="text-center text-th-muted text-xs font-semibold uppercase tracking-wide mb-3">Use It Your Way</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              <div className="bg-th-surface border border-th-border rounded-xl p-5">
-                <div className="text-th-heading font-semibold text-sm mb-1">Try the Live Demo</div>
-                <p className="text-th-muted text-xs leading-relaxed mb-3">
-                  Upload any business CSV and get an Opportunity Score, Vouch Insights, and Suggested Actions — instantly, in your browser.
-                </p>
-                <button
-                  onClick={() => document.getElementById('csv-input')?.click()}
-                  className="text-blue-500 hover:text-blue-400 text-xs font-medium transition-colors"
-                >
-                  Upload your data →
-                </button>
-              </div>
-              <div className="bg-th-surface border border-th-border rounded-xl p-5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <GithubIcon size={13} className="text-th-heading" />
-                  <div className="text-th-heading font-semibold text-sm">Use the Open-Source Starter Kit</div>
-                </div>
-                <p className="text-th-muted text-xs leading-relaxed mb-3">
-                  The Vouch Starter Kit is open source. Fork it, customise the scoring logic, and deploy your own version for your business.
-                </p>
-                <a
-                  href="https://github.com/yourvouch/vouch-starter-kit"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-400 text-xs font-medium transition-colors"
-                >
-                  View on GitHub →
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Upload dropzone */}
-          <div className="bg-th-surface border border-th-border rounded-xl p-6 max-w-xl mx-auto w-full">
-            <div
-              onDrop={handleDrop} onDragOver={e => e.preventDefault()}
-              className="border-2 border-dashed border-th-border rounded-xl p-8 text-center hover:border-blue-500/50 transition-colors cursor-pointer bg-th-hover/30"
-              onClick={() => document.getElementById('csv-input')?.click()}
-            >
-              <Upload size={28} className="mx-auto text-th-muted mb-3" />
-              <div className="text-th-heading font-semibold text-sm mb-1">Drop your file here or click to browse</div>
-              <div className="text-th-muted text-xs mb-2">Supports .csv, .xlsx, .xls</div>
-              <div className="text-th-faint text-[10px]">Your data never leaves your browser</div>
-              {loading && <div className="text-blue-500 text-xs mt-3 animate-pulse">Parsing file…</div>}
-              {error && <div className="text-red-500 text-xs mt-3">{error}</div>}
-              <input id="csv-input" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-2 text-th-muted text-[11px] flex-wrap text-center">
-              <span>Not sure what to upload? Use any lead sheet, CRM export, or Google Sheet CSV.</span>
-              <button onClick={() => setShowGuide(true)} className="text-blue-500 hover:text-blue-400 font-medium whitespace-nowrap transition-colors">
-                How it Works
-              </button>
-            </div>
-          </div>
-
-          {/* Opportunity Audit CTA */}
-          <div className="bg-th-surface border border-blue-500/15 rounded-xl p-6 text-center">
-            <div className="text-th-heading font-bold text-sm mb-1">Ready to discover opportunities in your business?</div>
-            <p className="text-th-muted text-xs mb-3 max-w-md mx-auto">
-              Start with a free Opportunity Audit. Share a CSV, Google Sheet, or business data and Vouch will show where opportunities need attention.
-            </p>
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <a href="https://yourvouch.com/#audit" target="_blank" rel="noopener noreferrer"
-                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">
-                Start Opportunity Audit
-              </a>
-              <a href="https://yourvouch.com" target="_blank" rel="noopener noreferrer"
-                className="text-th-muted hover:text-th-heading text-xs transition-colors">
-                Visit Vouch
-              </a>
+            <div className="flex flex-wrap gap-3 text-[11px]">
+              <span className="flex items-center gap-1.5 text-green-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                Available today: CSV, Google Sheets, Excel, CRM exports
+              </span>
+              <span className="flex items-center gap-1.5 text-th-faint">
+                <span className="w-1.5 h-1.5 rounded-full bg-th-faint inline-block" />
+                Planned: WhatsApp, Email, Direct CRM sync
+              </span>
             </div>
           </div>
 
           <div className="text-center text-th-faint text-[10px] space-y-0.5">
-            <div>Your uploaded data stays private during this session.</div>
-            <div>For best results, upload sample or non-sensitive business data.</div>
+            <div>Your data stays in your browser — nothing is stored or sent to a server.</div>
           </div>
         </>
       )}
 
       {/* Processing */}
       {step === 'processing' && (
-        <div className="max-w-md mx-auto py-20 text-center space-y-4">
-          {PROCESSING_ITEMS.map((item, i) => (
+        <div className="max-w-sm mx-auto py-20 space-y-6">
+          <div className="text-center">
+            <div className="text-th-heading font-bold text-base mb-1">Analysing your data…</div>
+            <div className="text-th-muted text-xs">{PROCESSING_ITEMS[Math.min(processingStep, PROCESSING_ITEMS.length - 1)]}</div>
+          </div>
+          <div className="w-full bg-th-border rounded-full h-1.5 overflow-hidden">
             <div
-              key={item}
-              className={`flex items-center gap-3 justify-center transition-all duration-500 ease-out ${i <= processingStep ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1.5'}`}
-            >
-              <CheckCircle2 size={16} className="text-green-500 shrink-0" />
-              <span className="text-th-heading text-sm font-medium">{item}</span>
-            </div>
-          ))}
+              className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${Math.round(((processingStep + 1) / PROCESSING_ITEMS.length) * 100)}%` }}
+            />
+          </div>
+          <div className="space-y-2">
+            {PROCESSING_ITEMS.map((item, i) => (
+              <div
+                key={item}
+                className={`flex items-center gap-2.5 transition-all duration-400 ${i <= processingStep ? 'opacity-100' : 'opacity-30'}`}
+              >
+                <CheckCircle2 size={14} className={i <= processingStep ? 'text-green-500' : 'text-th-faint'} />
+                <span className="text-th-body text-xs">{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
