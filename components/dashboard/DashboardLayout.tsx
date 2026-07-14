@@ -9,7 +9,11 @@ import ExecutiveSummary from './ExecutiveSummary';
 import PriorityHero from './PriorityHero';
 import DecisionFeed from './DecisionFeed';
 import PipelineFlow from './PipelineFlow';
+import OpportunityChart from './OpportunityChart';
+import StageDistribution from './StageDistribution';
+import PriorityMatrix from './PriorityMatrix';
 import ActionCentre from './ActionCentre';
+import OutcomeComparison from './OutcomeComparison';
 import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
@@ -119,10 +123,11 @@ function DashboardContent() {
       <DashHeader />
       <main className="flex-1 overflow-y-auto bg-th-page">
         {view === 'dashboard' && (
-          <div className="p-6 max-w-6xl mx-auto space-y-6">
+          <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
             <RoleSwitcher />
             <ExecutiveSummary />
 
+            {/* Top priority + signals */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <PriorityHero />
@@ -132,11 +137,32 @@ function DashboardContent() {
               </div>
             </div>
 
+            {/* Pipeline visualization */}
             <div className="bg-th-surface border border-th-border rounded-xl p-5">
               <PipelineFlow />
             </div>
 
+            {/* Charts row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-th-surface border border-th-border rounded-xl p-5">
+                <OpportunityChart />
+              </div>
+              <div className="lg:col-span-1">
+                <StageDistribution />
+              </div>
+            </div>
+
+            {/* Priority matrix */}
+            <div className="bg-th-surface border border-th-border rounded-xl p-5">
+              <PriorityMatrix />
+            </div>
+
+            {/* Action centre */}
             <ActionCentre />
+
+            {/* Outcome tracking */}
+            <OutcomeComparison />
+
             <MappingCard />
             <FinalCTA />
             <div className="text-center py-3 space-y-1.5">
