@@ -1,17 +1,31 @@
 'use client';
 
 import { useDashboard } from '@/context/DashboardContext';
-import { Upload, Sun, Moon, ExternalLink, ArrowLeft, FileQuestion } from 'lucide-react';
+import type { PeriodId } from '@/context/DashboardContext';
+import { Upload, Sun, Moon, ExternalLink, ArrowLeft, FileQuestion, RefreshCw } from 'lucide-react';
+
+const PERIOD_OPTIONS: { id: PeriodId; label: string }[] = [
+  { id: 'all', label: 'All data' },
+  { id: 'month', label: 'This month' },
+  { id: 'prev_month', label: 'Last month' },
+  { id: 'quarter', label: 'Quarter' },
+];
 
 export default function DashHeader() {
-  const { view, setView, setShowGuide, dataMode, fileName, uploadedAt, theme, toggleTheme } = useDashboard();
+  const {
+    view, setView, setShowGuide, dataMode, fileName, uploadedAt,
+    theme, toggleTheme, lastAnalyzed, refreshAnalysis,
+    period, setPeriod,
+  } = useDashboard();
 
   const uploadTimeStr = uploadedAt?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const analyzedStr = lastAnalyzed?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   const showBackToTemplates = view === 'dashboard' || view === 'guide';
+  const showPeriod = view === 'dashboard';
 
   return (
-    <header className="h-14 bg-th-elevated border-b border-th-border flex items-center px-5 gap-3 shrink-0">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="h-14 bg-th-elevated border-b border-th-border flex items-center px-5 gap-3 shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-3 min-w-0 shrink-0">
         <h1 className="text-th-heading font-bold text-sm whitespace-nowrap">Vouch Opportunity Analyzer</h1>
         {dataMode === 'demo' ? (
           <span className="hidden sm:inline text-amber-500 text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
@@ -25,9 +39,40 @@ export default function DashHeader() {
         )}
       </div>
 
+      {/* Period selector — shown only on dashboard */}
+      {showPeriod && (
+        <div className="hidden lg:flex items-center gap-1 shrink-0">
+          {PERIOD_OPTIONS.map(opt => (
+            <button
+              key={opt.id}
+              onClick={() => setPeriod(opt.id)}
+              className={`text-[10px] font-medium px-2 py-1 rounded-lg transition-colors whitespace-nowrap ${
+                period === opt.id
+                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/20'
+                  : 'text-th-faint hover:text-th-muted hover:bg-th-hover'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex-1" />
 
       <div className="flex items-center gap-2 shrink-0">
+        {/* Last analyzed + refresh */}
+        {showPeriod && analyzedStr && (
+          <button
+            onClick={refreshAnalysis}
+            className="hidden md:flex items-center gap-1.5 text-th-faint hover:text-th-muted text-[10px] transition-colors"
+            title="Refresh analysis"
+          >
+            <RefreshCw size={10} />
+            <span>Updated {analyzedStr}</span>
+          </button>
+        )}
+
         {showBackToTemplates && (
           <button
             onClick={() => setView('upload')}

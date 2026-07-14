@@ -8,12 +8,55 @@ import type { DemoAction, ActionStatus, RoleId } from '@/lib/actionTypes';
 import { generateActions } from '@/lib/generateActions';
 
 export type ViewId = 'dashboard' | 'upload' | 'guide';
+export type PeriodId = 'all' | 'month' | 'prev_month' | 'quarter';
 
 export interface MappingMeta {
   columns: number;
   mapped: number;
   confidence: number;
   examples: { from: string; to: string }[];
+}
+
+export interface DecisionFeedEvent {
+  id: string;
+  type: 'action_complete' | 'action_assign' | 'action_start' | 'action_dismiss' | 'data_load' | 'refresh';
+  timestamp: number;
+  message: string;
+  detail?: string;
+}
+
+export interface ProjectedMetrics {
+  recoveredValue: number;
+  healthBoost: number;
+  winRateBoost: number;
+}
+
+function formatFeedMessage(status: ActionStatus, action: DemoAction): string {
+  switch (status) {
+    case 'completed': return `Completed: ${action.title}`;
+    case 'assigned': return `Assigned to ${action.owner}: ${action.title}`;
+    case 'in_progress': return `Started: ${action.title}`;
+    case 'dismissed': return `Dismissed: ${action.title}`;
+    default: return action.title;
+  }
+}
+
+function filterLeadsByPeriod(leads: UniversalLead[], period: PeriodId): UniversalLead[] {
+  if (period === 'all') return leads;
+  const now = Date.now();
+  const DAY = 86_400_000;
+  const ranges: Record<PeriodId, [number, number]> = {
+    all: [0, now],
+    month: [now - 30 * DAY, now],
+    prev_month: [now - 60 * DAY, now - 30 * DAY],
+    quarter: [now - 90 * DAY, now],
+  };
+  const [from, to] = ranges[period];
+  return leads.filter(l => {
+    const d = Date.parse(l.lastContacted);
+    if (isNaN(d)) return true; // demo data with non-ISO dates — always include
+    return d >= from && d <= to;
+  });
 }
 
 interface DashboardState {
@@ -49,6 +92,12 @@ interface DashboardState {
   // Role / view
   role: RoleId;
   setRole: (r: RoleId) => void;
+  // Phase 2: central decision state
+  feedEvents: DecisionFeedEvent[];
+  addFeedEvent: (e: Omit<DecisionFeedEvent, 'id' | 'timestamp'>) => void;
+  projectedMetrics: ProjectedMetrics;
+  period: PeriodId;
+  setPeriod: (p: PeriodId) => void;
 }
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -78,6 +127,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<RoleId>('executive');
   const [actionStatuses, setActionStatuses] = useState<Record<string, ActionStatus>>({});
   const [lastAnalyzed, setLastAnalyzed] = useState<Date | null>(null);
+  const [feedEvents, setFeedEvents] = useState<DecisionFeedEvent[]>([]);
+  const [period, setPeriod] = useState<PeriodId>('all');
 
   useEffect(() => {
     const stored = localStorage.getItem('vouch-theme');
@@ -97,31 +148,35 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setTheme(t => t === 'dark' ? 'light' : 'dark');
   }, []);
 
-  const stats = useMemo(() => computeStats(leads, templateId), [leads, templateId]);
+  // Period-filtered leads → stats
+  const filteredLeads = useMemo(() => filterLeadsByPeriod(leads, period), [leads, period]);
+  const stats = useMemo(() => computeStats(filteredLeads, templateId), [filteredLeads, templateId]);
 
-  // Data fingerprint — changes when dataset changes
   const dataFingerprint = useMemo(
     () => `${leads.length}-${leads[0]?.id ?? 'empty'}`,
     [leads]
   );
 
-  // Load persisted action statuses when data changes
+  // Load persisted action statuses when dataset changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const key = `vouch-action-statuses-${dataFingerprint}`;
-    const stored = localStorage.getItem(key);
+    const stored = localStorage.getItem(`vouch-action-statuses-${dataFingerprint}`);
     setActionStatuses(stored ? (JSON.parse(stored) as Record<string, ActionStatus>) : {});
   }, [dataFingerprint]);
 
-  // Track last analysis time
+  // Load persisted feed events when dataset changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem(`vouch-feed-events-${dataFingerprint}`);
+    setFeedEvents(stored ? (JSON.parse(stored) as DecisionFeedEvent[]) : []);
+  }, [dataFingerprint]);
+
   useEffect(() => {
     if (leads.length > 0) setLastAnalyzed(new Date());
   }, [leads]);
 
-  // Generate actions from current data
-  const baseActions = useMemo(() => generateActions(leads, stats), [leads, stats]);
+  const baseActions = useMemo(() => generateActions(filteredLeads, stats), [filteredLeads, stats]);
 
-  // Merge with persisted statuses
   const actions = useMemo(
     () => baseActions.map(a => ({ ...a, status: actionStatuses[a.id] ?? a.status })),
     [baseActions, actionStatuses]
@@ -130,15 +185,63 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const updateActionStatus = useCallback((id: string, status: ActionStatus) => {
     setActionStatuses(prev => {
       const next = { ...prev, [id]: status };
-      const key = `vouch-action-statuses-${dataFingerprint}`;
-      localStorage.setItem(key, JSON.stringify(next));
+      localStorage.setItem(`vouch-action-statuses-${dataFingerprint}`, JSON.stringify(next));
+      return next;
+    });
+
+    const action = baseActions.find(a => a.id === id);
+    if (action) {
+      const evt: DecisionFeedEvent = {
+        id: `feed-${Date.now()}`,
+        type: status === 'completed' ? 'action_complete'
+            : status === 'assigned' ? 'action_assign'
+            : status === 'in_progress' ? 'action_start'
+            : 'action_dismiss',
+        timestamp: Date.now(),
+        message: formatFeedMessage(status, action),
+        detail: status === 'completed' ? action.expectedOutcome : undefined,
+      };
+      setFeedEvents(prev => {
+        const next = [evt, ...prev].slice(0, 30);
+        localStorage.setItem(`vouch-feed-events-${dataFingerprint}`, JSON.stringify(next));
+        return next;
+      });
+    }
+  }, [dataFingerprint, baseActions]);
+
+  const addFeedEvent = useCallback((e: Omit<DecisionFeedEvent, 'id' | 'timestamp'>) => {
+    const evt: DecisionFeedEvent = { ...e, id: `feed-${Date.now()}`, timestamp: Date.now() };
+    setFeedEvents(prev => {
+      const next = [evt, ...prev].slice(0, 30);
+      localStorage.setItem(`vouch-feed-events-${dataFingerprint}`, JSON.stringify(next));
       return next;
     });
   }, [dataFingerprint]);
 
+  const projectedMetrics = useMemo((): ProjectedMetrics => {
+    const completed = actions.filter(a => a.status === 'completed');
+    if (completed.length === 0) return { recoveredValue: 0, healthBoost: 0, winRateBoost: 0 };
+
+    const recoveredValue = Math.round(Math.min(
+      stats.atRiskValue * 0.65,
+      completed.reduce((s, a) => s + (a.impactScore / 10) * stats.atRiskValue * 0.14, 0)
+    ));
+
+    const healthBoost = Math.min(20, completed.reduce((s, a) =>
+      s + (a.urgency === 'critical' ? 6 : a.urgency === 'high' ? 3 : 1), 0
+    ));
+
+    const winRateBoost = Math.min(8, Math.round(
+      completed.reduce((s, a) => s + a.impactScore * 0.35, 0) * 10
+    ) / 10);
+
+    return { recoveredValue, healthBoost, winRateBoost };
+  }, [actions, stats.atRiskValue]);
+
   const refreshAnalysis = useCallback(() => {
     setLastAnalyzed(new Date());
-  }, []);
+    addFeedEvent({ type: 'refresh', message: 'Analysis refreshed' });
+  }, [addFeedEvent]);
 
   const loadLiveData = useCallback((rows: UniversalLead[], name: string, confidence: number, meta?: MappingMeta) => {
     setLeads(rows);
@@ -204,6 +307,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       actions, updateActionStatus,
       lastAnalyzed, refreshAnalysis,
       role, setRole,
+      feedEvents, addFeedEvent, projectedMetrics,
+      period, setPeriod,
     }}>
       {children}
     </DashboardContext.Provider>

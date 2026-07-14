@@ -8,8 +8,9 @@ import RoleSwitcher from './RoleSwitcher';
 import ExecutiveSummary from './ExecutiveSummary';
 import PriorityHero from './PriorityHero';
 import DecisionFeed from './DecisionFeed';
+import DecisionImpactMap from './DecisionImpactMap';
 import PipelineFlow from './PipelineFlow';
-import OpportunityChart from './OpportunityChart';
+import OpportunityBubbleMap from './OpportunityBubbleMap';
 import StageDistribution from './StageDistribution';
 import PriorityMatrix from './PriorityMatrix';
 import ActionCentre from './ActionCentre';
@@ -127,6 +128,9 @@ function DashboardContent() {
             <RoleSwitcher />
             <ExecutiveSummary />
 
+            {/* Decision Impact Map — causal flow (Phase 4) */}
+            <DecisionImpactMap />
+
             {/* Top priority + signals */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
@@ -142,10 +146,10 @@ function DashboardContent() {
               <PipelineFlow />
             </div>
 
-            {/* Charts row */}
+            {/* Opportunity Bubble Map + Stage Distribution (Phase 7) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-th-surface border border-th-border rounded-xl p-5">
-                <OpportunityChart />
+              <div className="lg:col-span-2">
+                <OpportunityBubbleMap />
               </div>
               <div className="lg:col-span-1">
                 <StageDistribution />
@@ -157,10 +161,10 @@ function DashboardContent() {
               <PriorityMatrix />
             </div>
 
-            {/* Action centre */}
+            {/* Action centre (Phase 8 — Kanban on desktop) */}
             <ActionCentre />
 
-            {/* Outcome tracking */}
+            {/* Outcome story (Phase 9) */}
             <OutcomeComparison />
 
             <MappingCard />

@@ -26,7 +26,7 @@ function scoreToTextColor(s: number): string {
   return 'text-red-500';
 }
 
-export default function BusinessHealthScore() {
+export default function BusinessHealthScore({ projectedBoost = 0 }: { projectedBoost?: number }) {
   const { stats, leads } = useDashboard();
 
   const score = useMemo(() => {
@@ -48,7 +48,9 @@ export default function BusinessHealthScore() {
     return Math.max(0, Math.min(100, Math.round(100 - penalty)));
   }, [stats, leads]);
 
+  const projectedScore = Math.min(100, score + projectedBoost);
   const offset = CIRC - (score / 100) * CIRC;
+  const projectedOffset = projectedBoost > 0 ? CIRC - (projectedScore / 100) * CIRC : null;
   const color = scoreToColor(score);
   const label = scoreToLabel(score);
   const textColor = scoreToTextColor(score);
@@ -59,7 +61,22 @@ export default function BusinessHealthScore() {
         <svg width="100" height="100" viewBox="0 0 100 100" aria-label={`Business health score: ${score}`}>
           {/* Track */}
           <circle cx="50" cy="50" r="40" fill="none" stroke="var(--th-hover)" strokeWidth="7" />
-          {/* Progress */}
+          {/* Projected ring (behind active) */}
+          {projectedOffset !== null && (
+            <circle
+              cx="50" cy="50" r="40"
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="7"
+              strokeLinecap="round"
+              strokeDasharray={`${CIRC}`}
+              strokeDashoffset={projectedOffset}
+              transform="rotate(-90 50 50)"
+              opacity={0.2}
+              style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.34,1.56,0.64,1)' }}
+            />
+          )}
+          {/* Active progress */}
           <circle
             cx="50" cy="50" r="40"
             fill="none"
@@ -96,6 +113,9 @@ export default function BusinessHealthScore() {
       </div>
       <span className={`text-xs font-bold ${textColor}`}>{label}</span>
       <span className="text-th-faint text-[10px]">Business Health</span>
+      {projectedBoost > 0 && (
+        <span className="text-[9px] text-green-400 font-semibold">+{projectedBoost} projected</span>
+      )}
     </div>
   );
 }
