@@ -8,7 +8,8 @@ import RoleSwitcher from './RoleSwitcher';
 import ExecutiveSummary from './ExecutiveSummary';
 import PriorityHero from './PriorityHero';
 import DecisionFeed from './DecisionFeed';
-import DecisionImpactMap from './DecisionImpactMap';
+import LivingDecisionCanvas from './LivingDecisionCanvas';
+import AnalysisAnimation from './AnalysisAnimation';
 import PipelineFlow from './PipelineFlow';
 import OpportunityBubbleMap from './OpportunityBubbleMap';
 import StageDistribution from './StageDistribution';
@@ -128,8 +129,8 @@ function DashboardContent() {
             <RoleSwitcher />
             <ExecutiveSummary />
 
-            {/* Decision Impact Map — causal flow (Phase 4) */}
-            <DecisionImpactMap />
+            {/* Living Decision Canvas — central causal graph */}
+            <LivingDecisionCanvas />
 
             {/* Top priority + signals */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -184,6 +185,7 @@ function DashboardContent() {
       </main>
       {showUpload && view !== 'upload' && <UploadModal />}
       {showGuide && <UploadGuideView />}
+      <AnalysisAnimation />
     </div>
   );
 }

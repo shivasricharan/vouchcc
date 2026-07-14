@@ -31,6 +31,13 @@ export interface ProjectedMetrics {
   winRateBoost: number;
 }
 
+export interface RippleEvent {
+  actionId: string;
+  actionTitle: string;
+  targetType: 'risk' | 'health' | 'pipeline' | 'general';
+  timestamp: number;
+}
+
 function formatFeedMessage(status: ActionStatus, action: DemoAction): string {
   switch (status) {
     case 'completed': return `Completed: ${action.title}`;
@@ -98,6 +105,10 @@ interface DashboardState {
   projectedMetrics: ProjectedMetrics;
   period: PeriodId;
   setPeriod: (p: PeriodId) => void;
+  // Phase 3: ripple effect + analysis animation
+  ripple: RippleEvent | null;
+  analysisAnimPlayed: boolean;
+  markAnalysisPlayed: () => void;
 }
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -129,6 +140,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [lastAnalyzed, setLastAnalyzed] = useState<Date | null>(null);
   const [feedEvents, setFeedEvents] = useState<DecisionFeedEvent[]>([]);
   const [period, setPeriod] = useState<PeriodId>('all');
+  const [ripple, setRipple] = useState<RippleEvent | null>(null);
+  const [analysisAnimPlayed, setAnalysisAnimPlayed] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('vouch-theme');
@@ -182,6 +195,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [baseActions, actionStatuses]
   );
 
+  const markAnalysisPlayed = useCallback(() => {
+    setAnalysisAnimPlayed(true);
+  }, []);
+
   const updateActionStatus = useCallback((id: string, status: ActionStatus) => {
     setActionStatuses(prev => {
       const next = { ...prev, [id]: status };
@@ -206,6 +223,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`vouch-feed-events-${dataFingerprint}`, JSON.stringify(next));
         return next;
       });
+
+      // Trigger ripple effect
+      if (status === 'completed' || status === 'assigned' || status === 'in_progress') {
+        const targetType =
+          action.department === 'Finance' ? 'risk'
+          : action.urgency === 'critical' ? 'health'
+          : action.department === 'Operations' ? 'pipeline'
+          : 'general';
+        setRipple({ actionId: id, actionTitle: action.title, targetType, timestamp: Date.now() });
+        setTimeout(() => setRipple(null), 1600);
+      }
     }
   }, [dataFingerprint, baseActions]);
 
@@ -309,6 +337,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       role, setRole,
       feedEvents, addFeedEvent, projectedMetrics,
       period, setPeriod,
+      ripple, analysisAnimPlayed, markAnalysisPlayed,
     }}>
       {children}
     </DashboardContext.Provider>

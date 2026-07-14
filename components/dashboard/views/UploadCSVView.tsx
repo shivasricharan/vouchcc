@@ -27,59 +27,89 @@ const DATA_SOURCES = [
   { icon: '🏢', label: 'Direct CRM sync', available: false },
 ];
 
-const FLOW_STEPS = [
-  { label: '₹42.5L at risk', sub: 'detected in pipeline', color: '#ef4444' },
-  { label: '18 accounts', sub: 'need attention this week', color: '#f59e0b' },
-  { label: 'Action assigned', sub: 'Sales team notified', color: '#8b5cf6' },
-  { label: '14 completed', sub: 'actions resolved', color: '#10b981' },
-  { label: '₹28L progressed', sub: 'pipeline recovered', color: '#3b82f6' },
+const HERO_NODES = [
+  { type: 'SIGNAL',   value: '₹42L',     label: 'Revenue at risk',       sub: '14 deals inactive 7d+',   color: '#ef4444' },
+  { type: 'PRIORITY', value: '18 leads',  label: 'Need follow-up now',    sub: 'Top urgency this week',   color: '#f59e0b' },
+  { type: 'ACTION',   value: 'Assigned',  label: 'Sales team notified',   sub: 'Due: Thursday',           color: '#3b82f6' },
+  { type: 'OUTCOME',  value: '+₹28L',     label: 'Pipeline progressed',   sub: 'Demo projection',         color: '#22c55e' },
 ];
 
-function DecisionFlowPreview() {
+function HeroCanvas() {
   const [active, setActive] = useState(0);
+  const [key, setKey] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setActive(p => (p + 1) % FLOW_STEPS.length), 1800);
+    const t = setInterval(() => setActive(p => (p + 1) % HERO_NODES.length), 1700);
     return () => clearInterval(t);
-  }, []);
+  }, [key]);
+
+  function replay() {
+    setActive(0);
+    setKey(k => k + 1);
+  }
 
   return (
     <div className="bg-th-surface border border-th-border rounded-2xl p-5 overflow-hidden">
-      <div className="text-th-faint text-[10px] font-semibold uppercase tracking-widest mb-4 text-center">Sample business · live preview</div>
-      <div className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
-        {FLOW_STEPS.map((s, i) => (
-          <div key={i} className="flex items-center gap-1 shrink-0">
-            <div
-              className="flex flex-col items-center px-3 py-2.5 rounded-xl border transition-all duration-500"
-              style={{
-                borderColor: active === i ? s.color + '40' : 'var(--th-border)',
-                background: active === i ? s.color + '12' : 'var(--th-hover)',
-                minWidth: 90,
-              }}
-            >
-              <span
-                className="font-black text-sm leading-none mb-0.5 transition-colors duration-300"
-                style={{ color: active === i ? s.color : 'var(--th-muted)' }}
-              >
-                {s.label}
-              </span>
-              <span className="text-[9px] text-center leading-tight" style={{ color: 'var(--th-faint)' }}>{s.sub}</span>
-            </div>
-            {i < FLOW_STEPS.length - 1 && (
-              <span className="text-th-border text-xs shrink-0">›</span>
-            )}
-          </div>
-        ))}
+      <div className="text-th-faint text-[10px] font-semibold uppercase tracking-widest mb-4 text-center">
+        Sample business · interactive demo
       </div>
-      <div className="flex gap-1.5 justify-center mt-4">
-        {FLOW_STEPS.map((s, i) => (
-          <button
-            key={i}
-            onClick={() => setActive(i)}
-            className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-            style={{ background: active === i ? s.color : 'var(--th-faint)' }}
-          />
-        ))}
+
+      <div className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
+        {HERO_NODES.map((n, i) => {
+          const isActive = active === i;
+          const isDone   = active > i;
+          return (
+            <div key={i} className="flex items-center gap-1 shrink-0">
+              <div
+                className="flex flex-col gap-0.5 px-3 py-2.5 rounded-xl border transition-all duration-500"
+                style={{
+                  borderColor: isActive ? n.color + '55' : isDone ? n.color + '25' : 'var(--th-border)',
+                  background:  isActive ? n.color + '14' : isDone ? n.color + '08' : 'var(--th-hover)',
+                  minWidth: 90,
+                  boxShadow: isActive ? `0 0 18px ${n.color}20` : 'none',
+                }}
+              >
+                <div className="text-[8px] font-bold uppercase tracking-widest"
+                  style={{ color: isActive ? n.color : 'var(--th-faint)' }}>
+                  {n.type}
+                </div>
+                <div className="font-black text-sm leading-none transition-colors duration-300"
+                  style={{ color: isActive ? n.color : isDone ? n.color + 'aa' : 'var(--th-muted)' }}>
+                  {n.value}
+                </div>
+                <div className="text-[9px] leading-tight" style={{ color: 'var(--th-body)' }}>{n.label}</div>
+                <div className="text-[8px] leading-tight" style={{ color: 'var(--th-faint)' }}>{n.sub}</div>
+              </div>
+              {i < HERO_NODES.length - 1 && (
+                <div className="shrink-0 flex flex-col items-center gap-0.5">
+                  <div className="w-6 h-px" style={{ background: active > i ? HERO_NODES[i].color + '60' : 'var(--th-border)' }} />
+                  <span className="text-[10px] transition-colors duration-300"
+                    style={{ color: active > i ? HERO_NODES[i].color + 'aa' : 'var(--th-faint)' }}>›</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex gap-1.5">
+          {HERO_NODES.map((n, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className="h-1 rounded-full transition-all duration-300"
+              style={{ width: active === i ? 20 : 6, background: active === i ? n.color : 'var(--th-faint)' }}
+              aria-label={`Go to ${n.type}`}
+            />
+          ))}
+        </div>
+        <button
+          onClick={replay}
+          className="text-[10px] text-th-faint hover:text-th-muted transition-colors flex items-center gap-1"
+        >
+          <span>↺</span> Replay
+        </button>
       </div>
     </div>
   );
@@ -210,10 +240,10 @@ export default function UploadCSVView() {
               Interactive Demo
             </div>
             <h1 className="text-th-heading font-black text-3xl sm:text-4xl lg:text-5xl mb-4 leading-tight max-w-3xl mx-auto tracking-tight">
-              Turn business data into decisions that get executed.
+              Turn business signals into decisions that move.
             </h1>
             <p className="text-th-muted text-base max-w-xl mx-auto leading-relaxed mb-8">
-              Vouch finds what needs attention, recommends the next actions, tracks execution and shows what changed.
+              Vouch connects risks, actions and outcomes—then shows how the business responds.
             </p>
 
             {/* Primary CTA */}
@@ -223,7 +253,7 @@ export default function UploadCSVView() {
                 disabled={!sampleDataModule}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-sm px-6 py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/20"
               >
-                Try the interactive demo <ArrowRight size={14} />
+                Explore the living demo <ArrowRight size={14} />
               </button>
               <div
                 className="flex items-center gap-2 bg-th-surface border border-th-border hover:border-blue-500/30 text-th-heading font-semibold text-sm px-6 py-3 rounded-xl transition-colors cursor-pointer"
@@ -239,9 +269,9 @@ export default function UploadCSVView() {
             {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
           </div>
 
-          {/* Animated Decision Flow */}
+          {/* Hero canvas — causal flow animation */}
           <div className="max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            <DecisionFlowPreview />
+            <HeroCanvas />
           </div>
 
           {/* Decision Loop */}
