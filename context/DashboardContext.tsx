@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useMemo, useCallback, useEffect, t
 import { computeStats } from '@/lib/computeStats';
 import { detectTemplate } from '@/lib/fieldMapping';
 import type { UniversalLead, ComputedStats, TemplateId } from '@/lib/leadTypes';
+import type { DemoAction, ActionStatus, RoleId } from '@/lib/actionTypes';
+import { generateActions } from '@/lib/generateActions';
 
 export type ViewId = 'dashboard' | 'upload' | 'guide';
 
@@ -39,6 +41,14 @@ interface DashboardState {
   detectedColumns: number;
   missingFieldsWarning: string;
   mappingMeta: MappingMeta | null;
+  // Action tracking
+  actions: DemoAction[];
+  updateActionStatus: (id: string, status: ActionStatus) => void;
+  lastAnalyzed: Date | null;
+  refreshAnalysis: () => void;
+  // Role / view
+  role: RoleId;
+  setRole: (r: RoleId) => void;
 }
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -64,8 +74,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [detectedColumns, setDetectedColumns] = useState(0);
   const [missingFieldsWarning, setMissingFieldsWarning] = useState('');
   const [mappingMeta, setMappingMeta] = useState<MappingMeta | null>(null);
-
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [role, setRole] = useState<RoleId>('executive');
+  const [actionStatuses, setActionStatuses] = useState<Record<string, ActionStatus>>({});
+  const [lastAnalyzed, setLastAnalyzed] = useState<Date | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('vouch-theme');
@@ -86,6 +98,47 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const stats = useMemo(() => computeStats(leads, templateId), [leads, templateId]);
+
+  // Data fingerprint — changes when dataset changes
+  const dataFingerprint = useMemo(
+    () => `${leads.length}-${leads[0]?.id ?? 'empty'}`,
+    [leads]
+  );
+
+  // Load persisted action statuses when data changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const key = `vouch-action-statuses-${dataFingerprint}`;
+    const stored = localStorage.getItem(key);
+    setActionStatuses(stored ? (JSON.parse(stored) as Record<string, ActionStatus>) : {});
+  }, [dataFingerprint]);
+
+  // Track last analysis time
+  useEffect(() => {
+    if (leads.length > 0) setLastAnalyzed(new Date());
+  }, [leads]);
+
+  // Generate actions from current data
+  const baseActions = useMemo(() => generateActions(leads, stats), [leads, stats]);
+
+  // Merge with persisted statuses
+  const actions = useMemo(
+    () => baseActions.map(a => ({ ...a, status: actionStatuses[a.id] ?? a.status })),
+    [baseActions, actionStatuses]
+  );
+
+  const updateActionStatus = useCallback((id: string, status: ActionStatus) => {
+    setActionStatuses(prev => {
+      const next = { ...prev, [id]: status };
+      const key = `vouch-action-statuses-${dataFingerprint}`;
+      localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+  }, [dataFingerprint]);
+
+  const refreshAnalysis = useCallback(() => {
+    setLastAnalyzed(new Date());
+  }, []);
 
   const loadLiveData = useCallback((rows: UniversalLead[], name: string, confidence: number, meta?: MappingMeta) => {
     setLeads(rows);
@@ -148,6 +201,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       mappingConfidence, mappedFields, autoFilledFields, detectedColumns,
       missingFieldsWarning,
       mappingMeta,
+      actions, updateActionStatus,
+      lastAnalyzed, refreshAnalysis,
+      role, setRole,
     }}>
       {children}
     </DashboardContext.Provider>

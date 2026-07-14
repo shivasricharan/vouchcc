@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import DashHeader from './DashHeader';
 import UploadModal from './UploadModal';
-import KPICards from './KPICards';
-import FunnelChart from './FunnelChart';
-import AIInsights from './AIInsights';
-import PriorityFollowups from './PriorityFollowups';
-import NextActionsPanel from './NextActionsPanel';
+import RoleSwitcher from './RoleSwitcher';
+import ExecutiveSummary from './ExecutiveSummary';
+import PriorityHero from './PriorityHero';
+import DecisionFeed from './DecisionFeed';
+import PipelineFlow from './PipelineFlow';
+import ActionCentre from './ActionCentre';
 import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
@@ -118,28 +119,24 @@ function DashboardContent() {
       <DashHeader />
       <main className="flex-1 overflow-y-auto bg-th-page">
         {view === 'dashboard' && (
-          <div className="p-6 max-w-6xl mx-auto space-y-8">
-            <KPICards />
+          <div className="p-6 max-w-6xl mx-auto space-y-6">
+            <RoleSwitcher />
+            <ExecutiveSummary />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <AIInsights />
-                <PriorityFollowups />
+              <div className="lg:col-span-2">
+                <PriorityHero />
               </div>
               <div className="lg:col-span-1">
-                <div className="sticky top-4">
-                  <NextActionsPanel />
-                </div>
+                <DecisionFeed />
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <div className="h-px flex-1 bg-th-border" />
-              <span className="text-th-faint text-[10px] font-semibold uppercase tracking-widest">Detailed Breakdown</span>
-              <div className="h-px flex-1 bg-th-border" />
+            <div className="bg-th-surface border border-th-border rounded-xl p-5">
+              <PipelineFlow />
             </div>
 
-            <FunnelChart />
+            <ActionCentre />
             <MappingCard />
             <FinalCTA />
             <div className="text-center py-3 space-y-1.5">
