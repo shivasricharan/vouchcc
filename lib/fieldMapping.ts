@@ -154,12 +154,26 @@ function normalizeSource(raw: string): LeadSource {
   return SOURCE_ALIASES[key] || 'Other';
 }
 
-function parseValue(raw: string): number {
+/**
+ * Dashboard currency is stored in ₹ lakh. Uploaded exports usually contain
+ * whole rupee amounts (for example 450000 = ₹4.5L), while some teams export
+ * already-shortened values such as "4.5L" or "0.8 Cr". Normalize both forms
+ * here so downstream KPIs never treat rupees as lakhs.
+ */
+function parseValue(raw: string, columnName = ''): number {
   const cleaned = raw.replace(/[₹$€£,\s]/g, '').replace(/l$/i, '').replace(/lakh/i, '').replace(/lac/i, '').replace(/cr$/i, '').replace(/crore/i, '').replace(/k$/i, '');
   const n = parseFloat(cleaned);
   if (isNaN(n)) return 0;
-  if (/cr(ore)?$/i.test(raw.trim())) return n * 100;
-  if (/k$/i.test(raw.trim())) return n / 100;
+
+  const valueText = raw.trim();
+  const header = columnName.toLowerCase();
+  if (/cr(ore)?s?\b/i.test(valueText) || /\bcr(ore)?s?\b/.test(header)) return n * 100;
+  if (/(?:l|lakh|lakhs|lac|lacs)\s*$/i.test(valueText) || /\b(lakh|lakhs|lac|lacs)\b/.test(header)) return n;
+  if (/k\b/i.test(valueText) || /\b(thousand|thousands|000s|in k)\b/.test(header)) return n / 100;
+
+  // Plain large numbers in CSV/CRM exports are overwhelmingly whole rupees.
+  // Smaller plain values remain interpreted as lakhs for manually prepared files.
+  if (/[₹]/.test(valueText) || n >= 1_000) return n / 100_000;
   return n;
 }
 
@@ -246,7 +260,7 @@ export function mapRowsToLeads(rows: Record<string, string>[], colMap: ColumnMap
         lastContacted: get('lastContacted') || rawCreatedAt || '—',
         daysInStage,
         daysSinceUpdate,
-        value: parseValue(get('value') || '0'),
+        value: parseValue(get('value') || '0', colMap.value || ''),
         probability: parseProbability(get('probability'), stage),
         nextAction: get('nextAction') || inferNextAction(stage),
       };
