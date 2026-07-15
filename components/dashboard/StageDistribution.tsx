@@ -6,8 +6,6 @@ import { useDashboard } from '@/context/DashboardContext';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4', '#f97316', '#ec4899'];
 
-const TERMINAL_STAGES = new Set(['Lost', 'Completed', 'Closed Won', 'Closed Lost']);
-
 interface TooltipPayloadItem {
   name: string;
   value: number;
@@ -44,11 +42,9 @@ export default function StageDistribution() {
   const { stats } = useDashboard();
 
   const { activeData, activeCount, totalForPct } = useMemo(() => {
-    const active = (stats.byStage ?? []).filter(
-      (s) => !TERMINAL_STAGES.has(s.stage) && s.count > 0
-    );
-    const count = active.reduce((sum, s) => sum + s.count, 0);
-    return { activeData: active, activeCount: count, totalForPct: count || 1 };
+    const stages = (stats.byStage ?? []).filter((s) => s.count > 0);
+    const count = stages.reduce((sum, s) => sum + s.count, 0);
+    return { activeData: stages, activeCount: count, totalForPct: count || 1 };
   }, [stats.byStage]);
 
   const pieData = useMemo(
@@ -76,7 +72,7 @@ export default function StageDistribution() {
     >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
         <span style={{ color: 'var(--th-heading)', fontSize: 13, fontWeight: 700 }}>
-          Pipeline Distribution
+          Record Distribution
         </span>
         <span style={{ color: 'var(--th-muted)', fontSize: 11 }}>
           {activeData.length} stage{activeData.length !== 1 ? 's' : ''}
@@ -153,7 +149,7 @@ export default function StageDistribution() {
                         fill="var(--th-muted)"
                         fontSize={10}
                       >
-                        Active
+                        Records
                       </text>
                     </g>
                   );
