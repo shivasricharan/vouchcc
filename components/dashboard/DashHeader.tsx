@@ -2,7 +2,7 @@
 
 import { useDashboard } from '@/context/DashboardContext';
 import type { PeriodId } from '@/context/DashboardContext';
-import { Upload, Sun, Moon, ExternalLink, ArrowLeft, FileQuestion, RefreshCw } from 'lucide-react';
+import { Upload, Sun, Moon, ExternalLink, FileQuestion, RefreshCw, RotateCcw } from 'lucide-react';
 
 const PERIOD_OPTIONS: { id: PeriodId; label: string }[] = [
   { id: 'all', label: 'All data' },
@@ -20,13 +20,16 @@ export default function DashHeader() {
 
   const uploadTimeStr = uploadedAt?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   const analyzedStr = lastAnalyzed?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  const showBackToTemplates = view === 'dashboard' || view === 'guide';
   const showPeriod = view === 'dashboard';
 
   return (
     <header className="h-14 bg-th-elevated border-b border-th-border flex items-center px-5 gap-3 shrink-0 overflow-x-auto">
       <div className="flex items-center gap-3 min-w-0 shrink-0">
-        <h1 className="text-th-heading font-bold text-sm whitespace-nowrap">Vouch Opportunity Analyzer</h1>
+        <a href="https://yourvouch.com" className="flex items-center gap-2 text-th-heading" aria-label="Vouch website">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">V</span>
+          <span className="font-bold text-sm whitespace-nowrap">Vouch</span>
+        </a>
+        <span className="hidden xl:inline text-[10px] font-medium text-th-faint">Business Decision Intelligence</span>
         {dataMode === 'demo' ? (
           <span className="hidden sm:inline text-amber-500 text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
             SAMPLE DATA
@@ -73,13 +76,14 @@ export default function DashHeader() {
           </button>
         )}
 
-        {showBackToTemplates && (
+        {showPeriod && dataMode === 'demo' && (
           <button
-            onClick={() => setView('upload')}
+            onClick={refreshAnalysis}
             className="flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
+            title="Refresh sample-data analysis"
           >
-            <ArrowLeft size={12} />
-            <span className="hidden md:inline">Back to Start</span>
+            <RotateCcw size={12} />
+            <span className="hidden md:inline">Refresh demo</span>
           </button>
         )}
 
@@ -88,7 +92,7 @@ export default function DashHeader() {
           className="flex items-center gap-1.5 bg-th-hover border border-th-border text-th-body hover:text-th-heading text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
         >
           <Upload size={13} />
-          <span className="hidden sm:inline">Upload CSV</span>
+          <span className="hidden sm:inline">Upload Data</span>
         </button>
 
         <button
@@ -109,12 +113,12 @@ export default function DashHeader() {
         </a>
 
         <a
-          href="https://yourvouch.com/#audit"
+          href="https://yourvouch.com/#audit-form"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden md:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
         >
-          Start Opportunity Audit
+          Request a Pilot
         </a>
 
         <button
