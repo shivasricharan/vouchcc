@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vouch Demo — Turn CSV Data into Business Insights',
-  description: 'Try the Vouch live demo to analyse leads, sales, pipeline, follow-ups, and revenue opportunities from a CSV. Explore the open-source Vouch Starter Kit on GitHub.',
+  title: 'Vouch Demo — Business Decision Intelligence',
+  description: 'See how Vouch detects business priorities, recommends actions, tracks execution and measures what changes.',
   openGraph: {
-    title: 'Vouch Demo — Turn CSV Data into Business Insights',
-    description: 'Upload a CSV and discover missed revenue opportunities, follow-up gaps, and actionable insights in minutes.',
+    title: 'Vouch Demo — Business Decision Intelligence',
+    description: 'See how Vouch detects business priorities, recommends actions, tracks execution and measures what changes.',
     url: 'https://demo.yourvouch.com',
     siteName: 'Vouch Demo',
     type: 'website',
