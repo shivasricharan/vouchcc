@@ -46,6 +46,9 @@ export function computeStats(leads: UniversalLead[], templateId: TemplateId = 'a
   }
 
   const activeFunnelCount = leads.filter(l => isActiveStage(l.stage, templateId)).length;
+  const wonCount = leads.filter(l => isWonStage(l.stage, templateId)).length;
+  const lostCount = leads.filter(l => isLostStage(l.stage, templateId)).length;
+  const openCount = Math.max(0, leads.length - wonCount - lostCount);
 
   const stuckLeads = leads.filter(l =>
     l.daysInStage >= 7 && isActiveStage(l.stage, templateId)
@@ -60,9 +63,10 @@ export function computeStats(leads: UniversalLead[], templateId: TemplateId = 'a
     .filter(l => isActiveStage(l.stage, templateId))
     .reduce((s, l) => s + l.value, 0);
 
-  const atRiskValue = stuckLeads
-    .filter(l => l.value >= 40)
+  const valuedStuckLeads = stuckLeads.filter(l => l.value > 0);
+  const atRiskValue = valuedStuckLeads
     .reduce((s, l) => s + l.value, 0);
+  const stuckWithoutValueCount = stuckLeads.length - valuedStuckLeads.length;
 
   const followUpCount = leads.filter(l =>
     isActiveStage(l.stage, templateId) && l.daysInStage >= 3
@@ -81,7 +85,11 @@ export function computeStats(leads: UniversalLead[], templateId: TemplateId = 'a
   return {
     total: leads.length,
     activeFunnelCount,
+    openCount,
+    wonCount,
+    lostCount,
     stuckCount,
+    stuckWithoutValueCount,
     stageCounts,
     sourceCounts,
     teamCounts,
