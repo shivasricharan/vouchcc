@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import DashHeader from './DashHeader';
 import UploadModal from './UploadModal';
@@ -19,31 +18,7 @@ import OutcomeComparison from './OutcomeComparison';
 import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
-
-function AnnouncementBanner() {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-  return (
-    <div className="shrink-0 bg-blue-600/10 border-b border-blue-500/20 flex items-center justify-center gap-2 px-4 py-2 text-xs">
-      <span className="text-blue-400 font-medium">
-        See what Vouch finds in your business data →
-      </span>
-      <a
-        href="https://demo.yourvouch.com"
-        className="text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-2 transition-colors"
-      >
-        Try Demo
-      </a>
-      <button
-        onClick={() => setDismissed(true)}
-        className="ml-2 text-blue-400/60 hover:text-blue-400 transition-colors leading-none"
-        aria-label="Dismiss"
-      >
-        ✕
-      </button>
-    </div>
-  );
-}
+import DecisionLoop from './DecisionLoop';
 
 function FinalCTA() {
   return (
@@ -54,12 +29,12 @@ function FinalCTA() {
       </p>
       <div className="flex items-center justify-center gap-3 flex-wrap">
         <a
-          href="https://yourvouch.com"
+          href="https://yourvouch.com/#audit-form"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
         >
-          Talk to Us
+          Request a Pilot
         </a>
         <a
           href="https://yourvouch.com"
@@ -117,17 +92,36 @@ function MappingCard() {
 }
 
 function DashboardContent() {
-  const { view, showUpload, showGuide } = useDashboard();
+  const { view, showUpload, showGuide, role, dataMode } = useDashboard();
+  const roleCopy = {
+    executive: ['Good morning. Here’s what needs attention.', 'Vouch detected the priorities most likely to affect this month’s outcomes.'],
+    sales: ['Your pipeline needs decisions.', 'Focus the team on stalled, high-value opportunities and overdue follow-ups.'],
+    marketing: ['See which demand signals are working.', 'Compare source quality and act on leads losing momentum.'],
+    finance: ['Protect value already in motion.', 'Review revenue exposure, stalled deals and the actions that reduce risk.'],
+    operations: ['Turn priorities into execution.', 'See ownership, action progress and where work is slowing down.'],
+  }[role];
 
   return (
     <div className="flex flex-col h-screen bg-th-page overflow-hidden">
-      <AnnouncementBanner />
       <DashHeader />
       <main className="flex-1 overflow-y-auto bg-th-page">
         {view === 'dashboard' && (
           <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+            <section className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between animate-fade-up">
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-500">
+                  Business Decision Intelligence
+                  <span className={`rounded-full border px-2 py-0.5 tracking-normal ${dataMode === 'demo' ? 'border-amber-500/20 bg-amber-500/10 text-amber-500' : 'border-green-500/20 bg-green-500/10 text-green-500'}`}>
+                    {dataMode === 'demo' ? 'Sample data' : 'Uploaded data'}
+                  </span>
+                </div>
+                <h1 className="text-xl font-bold tracking-tight text-th-heading sm:text-2xl">{roleCopy[0]}</h1>
+                <p className="mt-1 max-w-2xl text-xs text-th-muted sm:text-sm">{roleCopy[1]}</p>
+              </div>
+            </section>
             <RoleSwitcher />
             <ExecutiveSummary />
+            <DecisionLoop />
 
             {/* Living Decision Canvas — central causal graph */}
             <LivingDecisionCanvas />
