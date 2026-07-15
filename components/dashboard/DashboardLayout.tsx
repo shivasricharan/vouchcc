@@ -4,10 +4,8 @@ import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import DashHeader from './DashHeader';
 import UploadModal from './UploadModal';
 import RoleSwitcher from './RoleSwitcher';
-import ExecutiveSummary from './ExecutiveSummary';
 import PriorityHero from './PriorityHero';
 import DecisionFeed from './DecisionFeed';
-import LivingDecisionCanvas from './LivingDecisionCanvas';
 import AnalysisAnimation from './AnalysisAnimation';
 import PipelineFlow from './PipelineFlow';
 import OpportunityBubbleMap from './OpportunityBubbleMap';
@@ -19,6 +17,7 @@ import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
 import DecisionLoop from './DecisionLoop';
+import DecisionReview from './DecisionReview';
 
 function FinalCTA() {
   return (
@@ -54,7 +53,7 @@ function MappingCard() {
   if (!mappingMeta) return null;
 
   return (
-    <div className="bg-th-surface border border-th-border rounded-xl p-5">
+    <div id="data-understanding" className="bg-th-surface border border-th-border rounded-xl p-5 scroll-mt-20">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-th-heading font-semibold text-sm">How Vouch Understood Your Data</span>
         <span className="text-green-500 text-[10px] font-bold bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full">
@@ -120,11 +119,7 @@ function DashboardContent() {
               </div>
             </section>
             <RoleSwitcher />
-            <ExecutiveSummary />
-            <DecisionLoop />
-
-            {/* Living Decision Canvas — central causal graph */}
-            <LivingDecisionCanvas />
+            <DecisionReview />
 
             {/* Top priority + signals */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -137,7 +132,7 @@ function DashboardContent() {
             </div>
 
             {/* Pipeline visualization */}
-            <div className="bg-th-surface border border-th-border rounded-xl p-5">
+            <div id="pipeline-flow" className="bg-th-surface border border-th-border rounded-xl p-5 scroll-mt-20">
               <PipelineFlow />
             </div>
 
@@ -158,6 +153,8 @@ function DashboardContent() {
 
             {/* Action centre (Phase 8 — Kanban on desktop) */}
             <ActionCentre />
+
+            <DecisionLoop />
 
             {/* Outcome story (Phase 9) */}
             <OutcomeComparison />
