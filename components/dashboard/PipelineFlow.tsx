@@ -41,11 +41,25 @@ export default function PipelineFlow() {
     <div>
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-th-heading font-bold text-base">Pipeline Flow</h2>
-        <span className="text-th-muted text-xs">{stats.total} leads · {activeStages.length} stages</span>
+        <span className="text-th-muted text-xs">{stats.total} records · {activeStages.length} stages</span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-5 sm:grid-cols-4" aria-label="Record reconciliation">
+        {[
+          { label: 'All records', value: stats.total, color: 'text-blue-500' },
+          { label: 'Open', value: stats.openCount, color: 'text-amber-500' },
+          { label: 'Won / completed', value: stats.wonCount, color: 'text-green-500' },
+          { label: 'Lost / dropped', value: stats.lostCount, color: 'text-red-500' },
+        ].map(item => (
+          <div key={item.label} className="rounded-lg border border-th-border bg-th-hover px-3 py-2">
+            <div className={`text-lg font-black ${item.color}`}>{item.value}</div>
+            <div className="text-[10px] text-th-muted">{item.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Stage flow — horizontal scroll on mobile */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" role="region" aria-label="Pipeline stages; scroll horizontally to see all stages" tabIndex={0}>
         <div className="flex items-stretch gap-0 min-w-max mb-6">
           {activeStages.map((s, i) => {
             const colorClass = getStageColor(s.stage, i);
@@ -117,6 +131,7 @@ export default function PipelineFlow() {
       {/* Legend */}
       <div className="flex items-center gap-4 flex-wrap text-[10px] text-th-faint">
         <span>Bar height = relative volume</span>
+        <span className="sm:hidden">Swipe to see all {activeStages.length} stages</span>
         {Object.values(stuckByStage).some(v => v >= 2) && (
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
