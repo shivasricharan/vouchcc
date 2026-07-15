@@ -13,7 +13,7 @@ const PERIOD_OPTIONS: { id: PeriodId; label: string }[] = [
 
 export default function DashHeader() {
   const {
-    view, setView, setShowGuide, dataMode, fileName, uploadedAt,
+    view, setShowUpload, setShowGuide, dataMode, fileName, uploadedAt,
     theme, toggleTheme, lastAnalyzed, refreshAnalysis,
     period, setPeriod,
   } = useDashboard();
@@ -88,8 +88,9 @@ export default function DashHeader() {
         )}
 
         <button
-          onClick={() => setView('upload')}
+          onClick={() => setShowUpload(true)}
           className="flex items-center gap-1.5 bg-th-hover border border-th-border text-th-body hover:text-th-heading text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+          aria-haspopup="dialog"
         >
           <Upload size={13} />
           <span className="hidden sm:inline">Upload Data</span>
