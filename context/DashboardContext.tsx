@@ -6,6 +6,7 @@ import { detectTemplate } from '@/lib/fieldMapping';
 import type { UniversalLead, ComputedStats, TemplateId } from '@/lib/leadTypes';
 import type { DemoAction, ActionStatus, RoleId } from '@/lib/actionTypes';
 import { generateActions } from '@/lib/generateActions';
+import { getSampleLeads } from '@/data/sampleData';
 
 export type ViewId = 'dashboard' | 'upload' | 'guide';
 export type PeriodId = 'all' | 'month' | 'prev_month' | 'quarter';
@@ -120,14 +121,14 @@ export function useDashboard(): DashboardState {
 }
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [view, setView] = useState<ViewId>('upload');
+  const [view, setView] = useState<ViewId>('dashboard');
   const [showGuide, setShowGuide] = useState(false);
-  const [leads, setLeads] = useState<UniversalLead[]>([]);
+  const [leads, setLeads] = useState<UniversalLead[]>(() => getSampleLeads('generic'));
   const [dataMode, setDataMode] = useState<'demo' | 'live'>('demo');
-  const [fileName, setFileName] = useState<string | undefined>();
+  const [fileName, setFileName] = useState<string | undefined>('Sample Business');
   const [uploadedAt, setUploadedAt] = useState<Date | undefined>();
   const [showUpload, setShowUpload] = useState(false);
-  const [templateId, setTemplateId] = useState<TemplateId>('auto');
+  const [templateId, setTemplateId] = useState<TemplateId>('service');
   const [mappingConfidence, setMappingConfidence] = useState(100);
   const [mappedFields, setMappedFields] = useState(0);
   const [autoFilledFields, setAutoFilledFields] = useState(0);
@@ -305,18 +306,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadDemoData = useCallback(() => {
-    setLeads([]);
+    setLeads(getSampleLeads('generic'));
     setDataMode('demo');
-    setFileName(undefined);
+    setFileName('Sample Business');
     setUploadedAt(undefined);
-    setTemplateId('auto');
+    setTemplateId('service');
     setMappingConfidence(100);
     setMappedFields(0);
     setAutoFilledFields(0);
     setDetectedColumns(0);
     setMissingFieldsWarning('');
     setMappingMeta(null);
-    setView('upload');
+    setView('dashboard');
   }, []);
 
   return (
