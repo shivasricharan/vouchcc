@@ -38,11 +38,11 @@ export default function BusinessHealthScore({ projectedBoost = 0 }: { projectedB
     ).length;
 
     let penalty = 0;
-    penalty += (stats.stuckCount / active) * 35;
-    penalty += (stats.followUpCount / active) * 25;
-    penalty += (unassigned / Math.max(stats.total, 1)) * 20;
+    penalty += (stats.stuckCount / active) * 25;
+    penalty += (stats.followUpCount / active) * 45;
+    penalty += (unassigned / Math.max(stats.total, 1)) * 15;
     if (stats.pipelineValue > 0) {
-      penalty += (stats.atRiskValue / stats.pipelineValue) * 20;
+      penalty += (stats.atRiskValue / stats.pipelineValue) * 15;
     }
 
     return Math.max(0, Math.min(100, Math.round(100 - penalty)));
