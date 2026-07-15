@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
+import type { MappingMeta } from '@/context/DashboardContext';
 import { detectColumns, mapRowsToLeads, getMappingConfidence, FIELD_DEFS } from '@/lib/fieldMapping';
 import type { ColumnMap } from '@/lib/fieldMapping';
 import type { UniversalLead } from '@/lib/leadTypes';
@@ -82,7 +83,22 @@ export default function UploadModal() {
   }
 
   function confirm() {
-    loadLiveData(mapped, fileName, confidence);
+    const mappedCount = Object.values(colMap).filter(Boolean).length;
+    const examples: MappingMeta['examples'] = Object.entries(colMap)
+      .filter(([, value]) => value)
+      .slice(0, 5)
+      .map(([key, csvColumn]) => {
+        const definition = FIELD_DEFS.find(field => field.key === key);
+        return { from: csvColumn as string, to: definition?.label || key };
+      })
+      .filter(example => example.from.toLowerCase() !== example.to.toLowerCase());
+
+    loadLiveData(mapped, fileName, confidence, {
+      columns: headers.length,
+      mapped: mappedCount,
+      confidence,
+      examples,
+    });
     setView('dashboard');
   }
 
@@ -99,14 +115,14 @@ export default function UploadModal() {
   const autoFilled = FIELD_DEFS.length - mappedCount;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-th-surface border border-th-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
+      <div className="bg-th-surface border border-th-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="upload-dialog-title">
         <div className="flex items-center justify-between px-6 py-4 border-b border-th-border">
           <div>
-            <div className="text-th-heading font-bold text-base">Upload Your Lead Data</div>
+            <div id="upload-dialog-title" className="text-th-heading font-bold text-base">Upload business data</div>
             <div className="text-th-muted text-xs mt-0.5">CSV or Excel · your data stays in your browser</div>
           </div>
-          <button onClick={close} className="text-th-muted hover:text-th-heading transition-colors">
+          <button onClick={close} className="text-th-muted hover:text-th-heading transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Close upload dialog">
             <X size={18} />
           </button>
         </div>
