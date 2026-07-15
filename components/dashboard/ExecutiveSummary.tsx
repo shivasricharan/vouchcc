@@ -62,7 +62,7 @@ export default function ExecutiveSummary() {
     if (role === 'finance') {
       return [
         { label: 'Pipeline Value', value: stats.hasValues ? fmt(stats.pipelineValue) : String(stats.activeFunnelCount), sub: 'total active value', color: 'text-blue-500', dot: 'bg-blue-400' },
-        { label: 'Revenue at Risk', value: stats.hasValues && stats.atRiskValue > 0 ? fmt(stats.atRiskValue) : String(stats.stuckCount), sub: 'stuck 7+ days', color: 'text-red-500', dot: 'bg-red-400', delta: riskDelta, deltaColor: 'text-green-400' },
+        { label: 'Revenue at Risk', value: stats.atRiskValue > 0 ? fmt(stats.atRiskValue) : '—', sub: stats.stuckCount > 0 ? `${stats.stuckCount} stalled opportunities` : 'no valued stalled opportunities', color: 'text-red-500', dot: 'bg-red-400', delta: riskDelta, deltaColor: 'text-green-400' },
         { label: 'Stuck Deals', value: String(stats.stuckCount), sub: 'need decisions', color: 'text-amber-500', dot: 'bg-amber-400' },
         { label: 'Active Opportunities', value: String(stats.activeFunnelCount), sub: 'in pipeline', color: 'text-green-500', dot: 'bg-green-400' },
         { label: 'Priority Actions', value: String(priorityActions.length), sub: 'finance-related', color: 'text-violet-500', dot: 'bg-violet-400' },
@@ -89,19 +89,19 @@ export default function ExecutiveSummary() {
       ];
     }
     if (role === 'operations') {
-      const unassigned = actions.filter(a => a.department === 'Operations').length;
+      const executionRate = actions.length > 0 ? Math.round((completedActions.length / actions.length) * 100) : 0;
       return [
-        { label: 'Total Leads', value: String(stats.total), sub: 'in system', color: 'text-blue-500', dot: 'bg-blue-400' },
-        { label: 'Unresolved Actions', value: String(priorityActions.length), sub: 'need attention', color: 'text-amber-500', dot: 'bg-amber-400' },
-        { label: 'Stuck in Pipeline', value: String(stats.stuckCount), sub: '7+ days stalled', color: 'text-red-500', dot: 'bg-red-400' },
-        { label: 'Ops Actions', value: String(unassigned), sub: 'operations tasks', color: 'text-violet-500', dot: 'bg-violet-400' },
-        { label: 'Completed', value: String(completedActions.length), sub: 'actions done', color: 'text-green-500', dot: 'bg-green-400', delta: healthDelta, deltaColor: 'text-green-400' },
+        { label: 'Total Records', value: String(stats.total), sub: 'reconciled below', color: 'text-blue-500', dot: 'bg-blue-400' },
+        { label: 'Open Pipeline', value: String(stats.openCount), sub: 'active records', color: 'text-amber-500', dot: 'bg-amber-400' },
+        { label: 'Won / Completed', value: String(stats.wonCount), sub: 'pipeline outcomes', color: 'text-green-500', dot: 'bg-green-400' },
+        { label: 'Lost / Dropped', value: String(stats.lostCount), sub: 'closed records', color: 'text-red-500', dot: 'bg-red-400' },
+        { label: 'Action Execution', value: `${executionRate}%`, sub: `${completedActions.length} of ${actions.length} actions`, color: 'text-violet-500', dot: 'bg-violet-400' },
       ];
     }
     // Executive (default)
     const executionRate = actions.length > 0 ? Math.round((completedActions.length / actions.length) * 100) : 0;
     return [
-      { label: 'Revenue at Risk', value: stats.hasValues && stats.atRiskValue > 0 ? fmt(stats.atRiskValue) : String(stats.stuckCount), sub: 'stuck 7+ days', color: 'text-red-500', dot: 'bg-red-400', delta: riskDelta, deltaColor: 'text-green-400' },
+      { label: 'Revenue at Risk', value: stats.atRiskValue > 0 ? fmt(stats.atRiskValue) : '—', sub: stats.stuckCount > 0 ? `${stats.stuckCount} stalled opportunities${stats.stuckWithoutValueCount > 0 ? ` · ${stats.stuckWithoutValueCount} without value` : ''}` : 'no valued stalled opportunities', color: 'text-red-500', dot: 'bg-red-400', delta: riskDelta, deltaColor: 'text-green-400' },
       { label: 'Priority Actions', value: String(priorityActions.length), sub: 'need attention', color: 'text-amber-500', dot: 'bg-amber-400' },
       { label: 'Execution Rate', value: `${executionRate}%`, sub: `${completedActions.length} actions completed`, color: 'text-teal-500', dot: 'bg-teal-400', delta: healthDelta, deltaColor: 'text-green-400' },
     ];
