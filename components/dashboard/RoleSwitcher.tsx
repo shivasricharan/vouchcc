@@ -3,13 +3,14 @@
 import { useDashboard } from '@/context/DashboardContext';
 import { ROLES } from '@/lib/actionTypes';
 import type { RoleId } from '@/lib/actionTypes';
+import { BriefcaseBusiness, CircleDollarSign, Megaphone, Settings2, TrendingUp } from 'lucide-react';
 
-const ROLE_ICONS: Record<RoleId, string> = {
-  executive: '◈',
-  sales: '◎',
-  marketing: '◇',
-  finance: '◆',
-  operations: '⊕',
+const ROLE_ICONS: Record<RoleId, typeof BriefcaseBusiness> = {
+  executive: BriefcaseBusiness,
+  sales: TrendingUp,
+  marketing: Megaphone,
+  finance: CircleDollarSign,
+  operations: Settings2,
 };
 
 export default function RoleSwitcher() {
@@ -17,7 +18,9 @@ export default function RoleSwitcher() {
 
   return (
     <div className="flex items-center gap-1 bg-th-elevated border border-th-border rounded-xl p-1 overflow-x-auto">
-      {ROLES.map(r => (
+      {ROLES.map(r => {
+        const Icon = ROLE_ICONS[r.id];
+        return (
         <button
           key={r.id}
           onClick={() => setRole(r.id)}
@@ -27,10 +30,10 @@ export default function RoleSwitcher() {
               : 'text-th-muted hover:text-th-heading hover:bg-th-hover'
           }`}
         >
-          <span className="text-[10px]">{ROLE_ICONS[r.id]}</span>
+          <Icon size={12} aria-hidden="true" />
           {r.label}
         </button>
-      ))}
+      )})}
       <div className="flex-1 min-w-0" />
       <span className="text-th-faint text-[10px] font-medium px-2 shrink-0 hidden sm:block">View</span>
     </div>
