@@ -117,7 +117,9 @@ interface BarMetric {
 
 function MetricRow({ metric }: { metric: BarMetric }) {
   const barBefore = metric.higherIsBetter ? metric.beforePct : 100 - metric.beforePct;
-  const barAfter = metric.higherIsBetter ? metric.afterPct : 100 - metric.afterPct;
+  const barAfter = metric.isLive
+    ? metric.afterPct
+    : metric.higherIsBetter ? metric.afterPct : 100 - metric.afterPct;
 
   return (
     <div className="bg-th-hover rounded-lg px-4 py-3">
@@ -210,8 +212,8 @@ export default function OutcomeComparison() {
     label: 'Actions Complete',
     beforeLabel: `${completedCount} done`,
     afterLabel: `${actions.length} total`,
-    beforePct: actionsPct,
-    afterPct: 100,
+    beforePct: 0,
+    afterPct: actionsPct,
     higherIsBetter: true,
     isLive: true,
   };
