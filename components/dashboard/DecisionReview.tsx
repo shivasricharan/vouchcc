@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ArrowRight, CalendarClock, CheckCircle2, Eye, Target, TrendingUp } from 'lucide-react';
+import { ArrowRight, CalendarClock, CheckCircle2, CircleDollarSign, Eye, Megaphone, Target, TrendingUp, Users } from 'lucide-react';
 import { useDashboard } from '@/context/DashboardContext';
 
 const DAY = 86_400_000;
@@ -100,6 +100,41 @@ export default function DecisionReview() {
     ).reduce((sum, lead) => sum + lead.value, 0) * 10) / 10,
   })), [openLeads]);
 
+  const sourcePerformance = useMemo(() => Object.entries(stats.sourceCounts)
+    .map(([label, count]) => {
+      const sourceLeads = leads.filter(lead => lead.source === label);
+      return {
+        label,
+        count,
+        momentum: sourceLeads.filter(lead => isOpen(lead.stage) && lead.daysSinceUpdate <= 3).length,
+        quality: sourceLeads.length ? Math.round(sourceLeads.reduce((sum, lead) => sum + lead.probability, 0) / sourceLeads.length) : 0,
+      };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 7), [leads, stats.sourceCounts]);
+
+  const ownerPerformance = useMemo(() => Object.entries(stats.teamCounts)
+    .map(([label, count]) => ({
+      label,
+      count,
+      stalled: openLeads.filter(lead => lead.owner === label && lead.daysSinceUpdate >= 7).length,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 7), [openLeads, stats.teamCounts]);
+
+  const stageValue = useMemo(() => stats.byStage
+    .filter(row => row.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7)
+    .map(row => ({ label: row.stage, value: row.value })), [stats.byStage]);
+
+  const actionProgress = useMemo(() => [
+    { label: 'Recommended', count: actions.filter(action => action.status === 'recommended').length },
+    { label: 'Assigned', count: actions.filter(action => action.status === 'assigned').length },
+    { label: 'In progress', count: actions.filter(action => action.status === 'in_progress').length },
+    { label: 'Completed', count: actions.filter(action => action.status === 'completed').length },
+  ], [actions]);
+
   useEffect(() => {
     if (dataMode !== 'live' || leads.length === 0) return;
     const key = 'vouch-analysis-snapshots-v1';
@@ -130,13 +165,69 @@ export default function DecisionReview() {
   const topAction = actions.find(action => action.status !== 'completed' && action.status !== 'dismissed');
   const roleLead = role === 'finance' ? 'value exposure' : role === 'operations' ? 'execution gaps' : role === 'marketing' ? 'demand quality' : role === 'sales' ? 'pipeline momentum' : 'business priorities';
 
-  const kpis = [
+  const wonRate = leads.length ? Math.round((stats.wonCount / leads.length) * 100) : 0;
+  const unassigned = openLeads.filter(lead => !lead.owner || lead.owner === 'Unassigned' || lead.owner === '—').length;
+  const completedActions = actions.filter(action => action.status === 'completed').length;
+
+  const kpis = role === 'sales' ? [
+    { label: 'Open pipeline', value: stats.openCount, detail: `${money(stats.pipelineValue)} potential value`, icon: TrendingUp, target: 'pipeline-flow' },
+    { label: 'Follow-ups overdue', value: stats.followUpCount, detail: 'open records needing contact', icon: CalendarClock, target: 'action-centre' },
+    { label: 'Stalled opportunities', value: stats.stuckCount, detail: 'inactive for 7+ days', icon: Target, target: 'pipeline-flow' },
+    { label: 'Win rate', value: `${wonRate}%`, detail: `${stats.wonCount} won of ${leads.length}`, icon: CheckCircle2, target: 'pipeline-flow' },
+    { label: 'Active momentum', value: momentumLeads.length, detail: 'updated in last 3 days', icon: Eye, target: 'pipeline-flow' },
+  ] : role === 'marketing' ? [
+    { label: 'Leads generated', value: leads.length, detail: `${Object.keys(stats.sourceCounts).length} tracked sources`, icon: Megaphone, target: 'pipeline-flow' },
+    { label: 'Top source', value: sourcePerformance[0]?.label ?? '—', detail: `${sourcePerformance[0]?.count ?? 0} records`, icon: TrendingUp, target: 'pipeline-flow' },
+    { label: 'Source momentum', value: sourcePerformance.reduce((sum, item) => sum + item.momentum, 0), detail: 'recently engaged leads', icon: CheckCircle2, target: 'pipeline-flow' },
+    { label: 'Needs nurture', value: attentionLeads.length, detail: 'inactive for 3+ days', icon: CalendarClock, target: 'action-centre' },
+    { label: 'Data coverage', value: `${visibility}/100`, detail: 'source and contact visibility', icon: Eye, target: 'data-understanding' },
+  ] : role === 'finance' ? [
+    { label: 'Open pipeline value', value: money(stats.pipelineValue), detail: `${stats.openCount} active records`, icon: CircleDollarSign, target: 'pipeline-flow' },
+    { label: 'Value at risk', value: money(stats.atRiskValue), detail: `${stats.stuckCount} stalled records`, icon: Target, target: 'action-centre' },
+    { label: 'Won value signals', value: stats.wonCount, detail: 'won or active outcomes', icon: CheckCircle2, target: 'pipeline-flow' },
+    { label: 'Unvalued risks', value: stats.stuckWithoutValueCount, detail: 'stalled without deal value', icon: Eye, target: 'data-understanding' },
+    { label: 'Risk concentration', value: stats.pipelineValue ? `${Math.round((stats.atRiskValue / stats.pipelineValue) * 100)}%` : '0%', detail: 'of open value currently stalled', icon: TrendingUp, target: 'pipeline-flow' },
+  ] : role === 'operations' ? [
+    { label: 'Total records', value: leads.length, detail: 'currently in the system', icon: Users, target: 'pipeline-flow' },
+    { label: 'Unresolved actions', value: actions.filter(action => !['completed', 'dismissed'].includes(action.status)).length, detail: 'recommended or underway', icon: Target, target: 'action-centre' },
+    { label: 'Stuck in pipeline', value: stats.stuckCount, detail: 'inactive for 7+ days', icon: CalendarClock, target: 'pipeline-flow' },
+    { label: 'Unassigned records', value: unassigned, detail: 'need a clear owner', icon: Users, target: 'action-centre' },
+    { label: 'Actions completed', value: completedActions, detail: `${actions.length} total generated actions`, icon: CheckCircle2, target: 'action-centre' },
+  ] : [
     { label: 'Needs attention', value: attentionLeads.length, detail: `${stats.stuckCount} inactive 7+ days`, icon: Target, target: 'action-centre' },
-    { label: 'Follow-ups overdue', value: stats.followUpCount, detail: '3+ days without activity', icon: CalendarClock, target: 'action-centre' },
-    { label: 'Avg. days inactive', value: averageInactive, detail: 'across open pipeline', icon: TrendingUp, target: 'pipeline-flow' },
-    { label: 'Maintaining momentum', value: momentumLeads.length, detail: 'updated in last 3 days', icon: CheckCircle2, target: 'pipeline-flow' },
+    { label: 'Open pipeline', value: stats.openCount, detail: money(stats.pipelineValue), icon: TrendingUp, target: 'pipeline-flow' },
+    { label: 'Value at risk', value: money(stats.atRiskValue), detail: 'stalled open value', icon: CircleDollarSign, target: 'action-centre' },
+    { label: 'Actions completed', value: completedActions, detail: `${actions.length} priorities tracked`, icon: CheckCircle2, target: 'action-centre' },
     { label: 'Pipeline visibility', value: `${visibility}/100`, detail: visibility >= 80 ? 'strong data coverage' : 'more complete fields needed', icon: Eye, target: 'data-understanding' },
   ];
+
+  const primaryChart = role === 'marketing'
+    ? { title: 'Lead flow by source', subtitle: 'Which channels create demand', data: sourcePerformance, key: 'count', color: '#8b5cf6' }
+    : role === 'finance'
+      ? { title: 'Pipeline value by stage', subtitle: 'Where potential revenue sits', data: stageValue, key: 'value', color: '#0ea5e9' }
+      : role === 'operations'
+        ? { title: 'Workload by owner', subtitle: 'Records currently owned', data: ownerPerformance, key: 'count', color: '#f59e0b' }
+        : { title: role === 'sales' ? 'Sales momentum over time' : 'Business momentum over time', subtitle: 'Recorded activity by week', data: momentumData, key: 'activity', color: '#22c55e' };
+
+  const secondaryChart = role === 'marketing'
+    ? { title: 'Source quality', subtitle: 'Average win probability', data: sourcePerformance, key: 'quality', color: '#8b5cf6', percent: true, money: false }
+    : role === 'sales'
+      ? { title: 'Pipeline value by stage', subtitle: 'Where the team can convert value', data: stageValue, key: 'value', color: '#3b82f6', money: true, percent: false }
+      : role === 'operations'
+        ? { title: 'Action progress', subtitle: 'From recommendation to completion', data: actionProgress, key: 'count', color: '#f59e0b', money: false, percent: false }
+        : { title: riskTrend.length > 1 ? 'Value at risk trend' : 'Value exposure by inactivity', subtitle: riskTrend.length > 1 ? 'Across analysis snapshots' : 'Current uploaded snapshot', data: riskTrend.length > 1 ? riskTrend : riskByAge, key: 'value', color: '#ef4444', money: true, percent: false };
+
+  const reviewTitle = role === 'marketing'
+    ? `${leads.length} leads across ${Object.keys(stats.sourceCounts).length} sources.`
+    : role === 'finance'
+      ? `${money(stats.atRiskValue)} of open value needs review.`
+      : role === 'operations'
+        ? `${actions.filter(action => !['completed', 'dismissed'].includes(action.status)).length} actions still need execution.`
+        : role === 'sales'
+          ? `${stats.stuckCount} sales opportunities have lost momentum.`
+          : `${attentionLeads.length} opportunities need attention now.`;
+  const primaryChartData: Array<Record<string, string | number>> = primaryChart.data.map(item => ({ ...item }));
+  const secondaryChartData: Array<Record<string, string | number>> = secondaryChart.data.map(item => ({ ...item }));
 
   return (
     <section className="overflow-hidden rounded-2xl border border-th-border bg-th-surface" aria-labelledby="decision-review-title">
@@ -145,7 +236,7 @@ export default function DecisionReview() {
           <div>
             <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-500">Decision review</div>
             <h2 id="decision-review-title" className="text-lg font-bold tracking-tight text-th-heading sm:text-xl">
-              {attentionLeads.length} opportunities need attention now.
+              {reviewTitle}
             </h2>
             <p className="mt-1 max-w-3xl text-xs text-th-muted">
               Vouch reviewed {leads.length} records for {roleLead}. {stats.stuckCount > 0 ? `${stats.stuckCount} have been inactive for at least seven days${stats.atRiskValue > 0 ? `, representing ${money(stats.atRiskValue)} in potential value` : ''}.` : 'No seven-day pipeline stalls were detected.'}
@@ -184,18 +275,28 @@ export default function DecisionReview() {
       <div className="grid grid-cols-1 gap-px bg-th-border lg:grid-cols-3">
         <div className="min-h-64 bg-th-surface p-4 sm:p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
-            <div><h3 className="text-xs font-bold text-th-heading">Momentum over time</h3><p className="text-[10px] text-th-muted">Recorded activity by week</p></div>
-            <span className="text-[9px] text-th-faint">From activity dates</span>
+            <div><h3 className="text-xs font-bold text-th-heading">{primaryChart.title}</h3><p className="text-[10px] text-th-muted">{primaryChart.subtitle}</p></div>
+            <span className="text-[9px] text-th-faint">Live from uploaded data</span>
           </div>
           <ResponsiveContainer width="100%" height={170}>
-            <AreaChart data={momentumData} margin={{ top: 8, right: 4, left: -28, bottom: 0 }}>
-              <defs><linearGradient id="momentumFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22c55e" stopOpacity={0.24}/><stop offset="100%" stopColor="#22c55e" stopOpacity={0.02}/></linearGradient></defs>
-              <CartesianGrid vertical={false} stroke="var(--th-border)" strokeDasharray="2 3" />
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'var(--th-surface)', border: '1px solid var(--th-border)', borderRadius: 8, fontSize: 11 }} />
-              <Area type="monotone" dataKey="activity" stroke="#22c55e" strokeWidth={2} fill="url(#momentumFill)" animationDuration={600} />
-            </AreaChart>
+            {role === 'executive' || role === 'sales' ? (
+              <AreaChart data={primaryChartData} margin={{ top: 8, right: 4, left: -28, bottom: 0 }}>
+                <defs><linearGradient id="momentumFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={primaryChart.color} stopOpacity={0.24}/><stop offset="100%" stopColor={primaryChart.color} stopOpacity={0.02}/></linearGradient></defs>
+                <CartesianGrid vertical={false} stroke="var(--th-border)" strokeDasharray="2 3" />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={value => Number(value ?? 0)} contentStyle={{ background: 'var(--th-surface)', border: '1px solid var(--th-border)', borderRadius: 8, fontSize: 11 }} />
+                <Area type="monotone" dataKey={primaryChart.key} stroke={primaryChart.color} strokeWidth={2} fill="url(#momentumFill)" animationDuration={600} />
+              </AreaChart>
+            ) : (
+              <BarChart data={primaryChartData} margin={{ top: 8, right: 4, left: role === 'finance' ? -8 : -22, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--th-border)" strokeDasharray="2 3" />
+                <XAxis dataKey="label" tick={{ fontSize: 8, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} interval={0} tickFormatter={value => String(value).slice(0, 10)} />
+                <YAxis allowDecimals={false} tickFormatter={value => role === 'finance' ? money(value) : String(value)} tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={value => role === 'finance' ? money(Number(value ?? 0)) : Number(value ?? 0)} contentStyle={{ background: 'var(--th-surface)', border: '1px solid var(--th-border)', borderRadius: 8, fontSize: 11 }} />
+                <Bar dataKey={primaryChart.key} fill={primaryChart.color} radius={[5, 5, 0, 0]} animationDuration={600} />
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </div>
 
@@ -225,30 +326,19 @@ export default function DecisionReview() {
         <div className="min-h-64 bg-th-surface p-4 sm:p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-xs font-bold text-th-heading">{riskTrend.length > 1 ? 'Value at risk trend' : 'Value exposure by inactivity'}</h3>
-              <p className="text-[10px] text-th-muted">{riskTrend.length > 1 ? 'Across analysis snapshots' : 'Current uploaded snapshot'}</p>
+              <h3 className="text-xs font-bold text-th-heading">{secondaryChart.title}</h3>
+              <p className="text-[10px] text-th-muted">{secondaryChart.subtitle}</p>
             </div>
-            <span className="text-[9px] text-th-faint">{riskTrend.length > 1 ? `${riskTrend.length} reviews` : 'Trend starts next review'}</span>
+            <span className="text-[9px] text-th-faint">Recalculates on upload</span>
           </div>
           <ResponsiveContainer width="100%" height={170}>
-            {riskTrend.length > 1 ? (
-              <AreaChart data={riskTrend} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-                <defs><linearGradient id="riskFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity={0.22}/><stop offset="100%" stopColor="#ef4444" stopOpacity={0.02}/></linearGradient></defs>
-                <CartesianGrid vertical={false} stroke="var(--th-border)" strokeDasharray="2 3" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={value => money(value)} tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={value => money(Number(value ?? 0))} contentStyle={{ background: 'var(--th-surface)', border: '1px solid var(--th-border)', borderRadius: 8, fontSize: 11 }} />
-                <Area type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} fill="url(#riskFill)" animationDuration={600} />
-              </AreaChart>
-            ) : (
-              <BarChart data={riskByAge} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="var(--th-border)" strokeDasharray="2 3" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={value => money(value)} tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={value => money(Number(value ?? 0))} contentStyle={{ background: 'var(--th-surface)', border: '1px solid var(--th-border)', borderRadius: 8, fontSize: 11 }} />
-                <Bar dataKey="value" fill="#ef4444" radius={[5, 5, 0, 0]} animationDuration={600} />
-              </BarChart>
-            )}
+            <BarChart data={secondaryChartData} margin={{ top: 8, right: 4, left: secondaryChart.money ? -12 : -22, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="var(--th-border)" strokeDasharray="2 3" />
+              <XAxis dataKey="label" tick={{ fontSize: 8, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} interval={0} tickFormatter={value => String(value).slice(0, 10)} />
+              <YAxis tickFormatter={value => secondaryChart.money ? money(value) : secondaryChart.percent ? `${value}%` : String(value)} tick={{ fontSize: 9, fill: 'var(--th-muted)' }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={value => secondaryChart.money ? money(Number(value ?? 0)) : secondaryChart.percent ? `${Number(value ?? 0)}%` : Number(value ?? 0)} contentStyle={{ background: 'var(--th-surface)', border: '1px solid var(--th-border)', borderRadius: 8, fontSize: 11 }} />
+              <Bar dataKey={secondaryChart.key} fill={secondaryChart.color} radius={[5, 5, 0, 0]} animationDuration={600} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
