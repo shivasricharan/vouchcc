@@ -82,7 +82,11 @@ export interface ActivityItem {
 export interface ComputedStats {
   total: number;
   activeFunnelCount: number;
+  openCount: number;
+  wonCount: number;
+  lostCount: number;
   stuckCount: number;
+  stuckWithoutValueCount: number;
   stageCounts: Record<string, number>;
   sourceCounts: Record<string, number>;
   teamCounts: Record<string, number>;
