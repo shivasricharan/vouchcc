@@ -208,7 +208,7 @@ export default function ActionCentre() {
   const DEPTS = ['all', ...Array.from(new Set(actions.map(a => a.department)))];
 
   return (
-    <div id="action-centre">
+    <div id="action-centre" className="scroll-mt-20">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-2">
