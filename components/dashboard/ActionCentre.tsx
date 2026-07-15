@@ -162,7 +162,7 @@ function ActionCard({ action }: { action: ReturnType<typeof useDashboard>['actio
 // ─── Main component ───────────────────────────────────────────────────────
 
 export default function ActionCentre() {
-  const { actions, role } = useDashboard();
+  const { actions, role, stats } = useDashboard();
   const [filter, setFilter] = useState<FilterTab>('all');
   const [deptFilter, setDeptFilter] = useState<string>('all');
 
@@ -170,7 +170,8 @@ export default function ActionCentre() {
     sales: 'Sales',
     marketing: 'Marketing',
     finance: 'Finance',
-    operations: 'Operations',
+    // Operations owns cross-functional execution visibility, not only Ops-authored actions.
+    operations: 'all',
     executive: 'all',
   };
 
@@ -219,6 +220,7 @@ export default function ActionCentre() {
             </span>
           )}
         </div>
+        <span className="text-[10px] text-th-faint">{actions.length} actions generated from {stats.total} records</span>
         <div className="flex-1" />
         {/* Department filter */}
         <div className="flex items-center gap-1">
@@ -241,8 +243,9 @@ export default function ActionCentre() {
       {/* Progress bar */}
       <div className="bg-th-surface border border-th-border rounded-xl p-4 mb-4">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-4 text-xs flex-wrap">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:flex sm:items-center sm:flex-wrap">
             <span className="text-th-muted">Recommended: <strong className="text-blue-400">{counts.recommended}</strong></span>
+            <span className="text-th-muted">Assigned: <strong className="text-violet-400">{counts.assigned}</strong></span>
             <span className="text-th-muted">In Progress: <strong className="text-amber-400">{counts.in_progress}</strong></span>
             <span className="text-th-muted">Completed: <strong className="text-green-400">{counts.completed}</strong></span>
           </div>
@@ -291,14 +294,14 @@ export default function ActionCentre() {
 
       {/* ── Tab + list view (mobile < md) ── */}
       <div className="md:hidden">
-        <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+        <div className="grid grid-cols-2 gap-2 mb-4 sm:grid-cols-3">
           {TABS.map(t => {
             const count = t.key === 'all' ? actions.length : counts[t.key as ActionStatus];
             return (
               <button
                 key={t.key}
                 onClick={() => setFilter(t.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                className={`flex min-h-10 items-center justify-between gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                   filter === t.key
                     ? 'bg-th-elevated text-th-heading border border-th-border'
                     : 'text-th-muted hover:text-th-heading hover:bg-th-hover'
