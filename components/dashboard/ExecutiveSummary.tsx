@@ -99,12 +99,11 @@ export default function ExecutiveSummary() {
       ];
     }
     // Executive (default)
+    const executionRate = actions.length > 0 ? Math.round((completedActions.length / actions.length) * 100) : 0;
     return [
-      { label: 'Total Opportunities', value: String(stats.activeFunnelCount || stats.total), sub: 'active in pipeline', color: 'text-blue-500', dot: 'bg-blue-400' },
-      { label: 'Pipeline Value', value: stats.hasValues ? fmt(stats.pipelineValue) : String(stats.activeFunnelCount), sub: 'estimated value', color: 'text-green-500', dot: 'bg-green-400' },
       { label: 'Revenue at Risk', value: stats.hasValues && stats.atRiskValue > 0 ? fmt(stats.atRiskValue) : String(stats.stuckCount), sub: 'stuck 7+ days', color: 'text-red-500', dot: 'bg-red-400', delta: riskDelta, deltaColor: 'text-green-400' },
       { label: 'Priority Actions', value: String(priorityActions.length), sub: 'need attention', color: 'text-amber-500', dot: 'bg-amber-400' },
-      { label: 'Completed', value: String(completedActions.length), sub: 'actions done', color: 'text-teal-500', dot: 'bg-teal-400', delta: healthDelta, deltaColor: 'text-green-400' },
+      { label: 'Execution Rate', value: `${executionRate}%`, sub: `${completedActions.length} actions completed`, color: 'text-teal-500', dot: 'bg-teal-400', delta: healthDelta, deltaColor: 'text-green-400' },
     ];
   }, [role, stats, priorityActions, completedActions, actions, projectedMetrics, hasProjection]);
 
@@ -117,7 +116,7 @@ export default function ExecutiveSummary() {
         </div>
 
         {/* KPI grid — key={role} triggers re-animation on role switch (Phase 11) */}
-        <div key={role} className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div key={role} className={`flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4 ${role === 'executive' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
           {metrics.map((m, i) => (
             <Metric
               key={m.label}
