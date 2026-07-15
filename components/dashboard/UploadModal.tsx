@@ -188,6 +188,12 @@ export default function UploadModal() {
                 <strong>{rawRows.length} rows</strong> from <strong>{fileName}</strong>. Adjust column mapping below.
               </div>
 
+              {colMap.value && (
+                <div className="rounded-lg border border-th-border bg-th-hover px-3 py-2 text-[11px] text-th-muted">
+                  Currency check: values from <strong className="text-th-body">{colMap.value}</strong> will be normalized to Indian ₹ lakh for consistent, realistic reporting. Explicit lakh/crore labels are respected.
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {FIELD_DEFS.slice(0, 14).map(({ key, label, required }) => (
                   <div key={key}>
