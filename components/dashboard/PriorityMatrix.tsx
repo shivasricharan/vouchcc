@@ -96,7 +96,7 @@ export default function PriorityMatrix() {
   function getQuadrantActions(highImpact: boolean, highEffort: boolean): DemoAction[] {
     return activeActions.filter(a => {
       const isHighImpact = a.impactScore >= 6;
-      const isHighEffort = a.effortScore >= 6;
+      const isHighEffort = a.effortScore >= 5 || (a.department === 'Operations' && a.effortScore >= 4);
       return isHighImpact === highImpact && isHighEffort === highEffort;
     });
   }
