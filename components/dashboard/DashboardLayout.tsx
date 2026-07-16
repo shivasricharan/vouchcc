@@ -93,7 +93,7 @@ function MappingCard() {
 function DashboardContent() {
   const { view, showUpload, showGuide, role, dataMode } = useDashboard();
   const roleCopy = {
-    executive: ['Good morning. Here’s what needs attention.', 'Vouch detected the priorities most likely to affect this month’s outcomes.'],
+    executive: ['Here’s what needs your attention.', 'Vouch detected the priorities most likely to affect this month’s outcomes.'],
     sales: ['Your pipeline needs decisions.', 'Focus the team on stalled, high-value opportunities and overdue follow-ups.'],
     marketing: ['See which demand signals are working.', 'Compare source quality and act on leads losing momentum.'],
     finance: ['Protect value already in motion.', 'Review revenue exposure, stalled deals and the actions that reduce risk.'],
