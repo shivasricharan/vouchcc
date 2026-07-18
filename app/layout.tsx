@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vouch Demo — Business Decision Intelligence',
-  description: 'See how Vouch detects business priorities, recommends actions, tracks execution and measures what changes.',
+  title: 'Vouch Demo — Know What Needs Attention',
+  description: 'Upload business data and see which opportunities need attention, why they matter, and what to do next.',
   openGraph: {
-    title: 'Vouch Demo — Business Decision Intelligence',
-    description: 'See how Vouch detects business priorities, recommends actions, tracks execution and measures what changes.',
+    title: 'Vouch Demo — Know What Needs Attention',
+    description: 'Upload business data and see which opportunities need attention, why they matter, and what to do next.',
     url: 'https://demo.yourvouch.com',
     siteName: 'Vouch Demo',
     type: 'website',
