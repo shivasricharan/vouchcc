@@ -21,7 +21,7 @@ import UploadCSVView from './views/UploadCSVView';
 import DecisionLoop from './DecisionLoop';
 import DecisionReview from './DecisionReview';
 
-const TALK_URL = 'https://yourvouch.com/#audit-form';
+const TALK_URL = 'https://yourvouch.com/?from=demo#discuss-results';
 
 function money(value: number): string {
   if (value >= 100) return `₹${(value / 100).toFixed(1)}Cr`;
