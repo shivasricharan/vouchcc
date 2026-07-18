@@ -41,7 +41,7 @@ function CompactSnapshot() {
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Executive snapshot">
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Opportunity snapshot">
       {items.map(item => {
         const Icon = item.icon;
         return (
@@ -93,10 +93,7 @@ function ResultsCTA() {
 
 function QuickActions() {
   const { actions, updateActionStatus } = useDashboard();
-  const topActions = actions
-    .filter(action => !['completed', 'dismissed'].includes(action.status))
-    .slice(0, 3);
-
+  const topActions = actions.filter(action => !['completed', 'dismissed'].includes(action.status)).slice(0, 3);
   if (topActions.length === 0) return null;
 
   return (
@@ -119,21 +116,9 @@ function QuickActions() {
             <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-th-muted">{action.businessImpact}</p>
             <div className="mt-4 flex items-center justify-between gap-2">
               <span className="text-[10px] text-th-faint">Owner: {action.owner}</span>
-              {action.status === 'recommended' && (
-                <button onClick={() => updateActionStatus(action.id, 'assigned')} className="rounded-md bg-blue-600 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-blue-500">
-                  Assign →
-                </button>
-              )}
-              {action.status === 'assigned' && (
-                <button onClick={() => updateActionStatus(action.id, 'in_progress')} className="rounded-md bg-amber-500/15 px-2.5 py-1.5 text-[10px] font-semibold text-amber-500 hover:bg-amber-500/25">
-                  Start →
-                </button>
-              )}
-              {action.status === 'in_progress' && (
-                <button onClick={() => updateActionStatus(action.id, 'completed')} className="rounded-md bg-green-500/15 px-2.5 py-1.5 text-[10px] font-semibold text-green-500 hover:bg-green-500/25">
-                  Complete →
-                </button>
-              )}
+              {action.status === 'recommended' && <button onClick={() => updateActionStatus(action.id, 'assigned')} className="rounded-md bg-blue-600 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-blue-500">Assign →</button>}
+              {action.status === 'assigned' && <button onClick={() => updateActionStatus(action.id, 'in_progress')} className="rounded-md bg-amber-500/15 px-2.5 py-1.5 text-[10px] font-semibold text-amber-500 hover:bg-amber-500/25">Start →</button>}
+              {action.status === 'in_progress' && <button onClick={() => updateActionStatus(action.id, 'completed')} className="rounded-md bg-green-500/15 px-2.5 py-1.5 text-[10px] font-semibold text-green-500 hover:bg-green-500/25">Complete →</button>}
             </div>
           </article>
         ))}
@@ -146,16 +131,10 @@ function FinalCTA() {
   return (
     <div className="rounded-xl border border-blue-500/20 bg-th-surface p-6 text-center">
       <div className="mb-1 text-base font-bold text-th-heading">Ready to review your real opportunities?</div>
-      <p className="mx-auto mb-4 max-w-md text-sm text-th-muted">
-        Start with a short conversation about what Vouch found and whether a 14-day audit makes sense.
-      </p>
+      <p className="mx-auto mb-4 max-w-md text-sm text-th-muted">Start with a short conversation about what Vouch found and whether a 14-day audit makes sense.</p>
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
-          Discuss my results
-        </a>
-        <a href="https://yourvouch.com" target="_blank" rel="noopener noreferrer" className="text-sm text-th-muted transition-colors hover:text-th-heading">
-          Back to Vouch →
-        </a>
+        <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">Discuss my results</a>
+        <a href="https://yourvouch.com" target="_blank" rel="noopener noreferrer" className="text-sm text-th-muted transition-colors hover:text-th-heading">Back to Vouch →</a>
       </div>
     </div>
   );
@@ -169,9 +148,7 @@ function MappingCard() {
     <div id="data-understanding" className="scroll-mt-20 rounded-xl border border-th-border bg-th-surface p-5">
       <div className="mb-2 flex items-center gap-2">
         <span className="text-sm font-semibold text-th-heading">How Vouch understood your data</span>
-        <span className="rounded-full border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[10px] font-bold text-green-500">
-          {mappingConfidence}% confidence
-        </span>
+        <span className="rounded-full border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[10px] font-bold text-green-500">{mappingConfidence}% confidence</span>
       </div>
       <p className="mb-4 text-xs text-th-muted">Vouch standardised similar business fields from your upload.</p>
       <div className="mb-4 grid grid-cols-3 gap-3 text-center">
@@ -179,22 +156,11 @@ function MappingCard() {
           { label: 'Columns detected', value: String(mappingMeta.columns) },
           { label: 'Fields mapped', value: String(mappingMeta.mapped) },
           { label: 'Confidence', value: `${mappingMeta.confidence}%` },
-        ].map(item => (
-          <div key={item.label}>
-            <div className="text-lg font-bold text-th-heading">{item.value}</div>
-            <div className="text-[10px] text-th-muted">{item.label}</div>
-          </div>
-        ))}
+        ].map(item => <div key={item.label}><div className="text-lg font-bold text-th-heading">{item.value}</div><div className="text-[10px] text-th-muted">{item.label}</div></div>)}
       </div>
       {mappingMeta.examples.length > 0 && (
         <div className="space-y-1.5 border-t border-th-border pt-3">
-          {mappingMeta.examples.map((example, index) => (
-            <div key={index} className="flex items-center gap-2 text-xs">
-              <span className="font-mono text-th-faint">{example.from}</span>
-              <span className="text-th-faint">→</span>
-              <span className="text-th-body">{example.to}</span>
-            </div>
-          ))}
+          {mappingMeta.examples.map((example, index) => <div key={index} className="flex items-center gap-2 text-xs"><span className="font-mono text-th-faint">{example.from}</span><span className="text-th-faint">→</span><span className="text-th-body">{example.to}</span></div>)}
         </div>
       )}
     </div>
@@ -202,15 +168,8 @@ function MappingCard() {
 }
 
 function DashboardContent() {
-  const { view, showUpload, showGuide, role, dataMode } = useDashboard();
+  const { view, showUpload, showGuide, dataMode } = useDashboard();
   const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
-  const roleCopy = {
-    executive: ['Here’s what needs your attention.', 'Start with the few priorities most likely to affect this month’s outcomes.'],
-    sales: ['Your pipeline needs decisions.', 'Focus on stalled, high-value opportunities and overdue follow-ups.'],
-    marketing: ['See which demand signals are working.', 'Act on the sources and leads losing momentum.'],
-    finance: ['Protect value already in motion.', 'Review exposure, stalled deals and the actions that reduce risk.'],
-    operations: ['Turn priorities into execution.', 'See ownership, action progress and where work is slowing down.'],
-  }[role];
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-th-page">
@@ -225,11 +184,10 @@ function DashboardContent() {
                   {dataMode === 'demo' ? 'Sample data' : 'Uploaded data'}
                 </span>
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-th-heading sm:text-2xl">{roleCopy[0]}</h1>
-              <p className="mt-1 max-w-2xl text-xs text-th-muted sm:text-sm">{roleCopy[1]}</p>
+              <h1 className="text-xl font-bold tracking-tight text-th-heading sm:text-2xl">Here’s what needs your attention.</h1>
+              <p className="mt-1 max-w-2xl text-xs text-th-muted sm:text-sm">Start with the few priorities most likely to affect outcomes.</p>
             </section>
 
-            <RoleSwitcher />
             <CompactSnapshot />
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -249,12 +207,17 @@ function DashboardContent() {
 
             {showDeepAnalysis && (
               <div className="space-y-6 animate-fade-up">
+                <section className="rounded-xl border border-th-border bg-th-surface p-4 sm:p-5">
+                  <div className="mb-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">Optional team views</div>
+                    <h2 className="mt-1 text-base font-bold text-th-heading">Explore the same data from a team perspective</h2>
+                    <p className="mt-1 text-xs text-th-muted">Switch views only when you need sales, marketing, finance or execution detail.</p>
+                  </div>
+                  <RoleSwitcher />
+                </section>
                 <DecisionReview />
                 <div id="pipeline-flow" className="scroll-mt-20 rounded-xl border border-th-border bg-th-surface p-5"><PipelineFlow /></div>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <div className="lg:col-span-2"><OpportunityBubbleMap /></div>
-                  <div><StageDistribution /></div>
-                </div>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3"><div className="lg:col-span-2"><OpportunityBubbleMap /></div><div><StageDistribution /></div></div>
                 <div className="rounded-xl border border-th-border bg-th-surface p-5"><PriorityMatrix /></div>
                 <ActionCentre />
                 <DecisionLoop />
@@ -281,9 +244,5 @@ function DashboardContent() {
 }
 
 export default function DashboardLayout() {
-  return (
-    <DashboardProvider>
-      <DashboardContent />
-    </DashboardProvider>
-  );
+  return <DashboardProvider><DashboardContent /></DashboardProvider>;
 }
