@@ -156,7 +156,7 @@ function AnalysisSVG({ phase }: { phase: number }) {
 }
 
 export default function AnalysisAnimation() {
-  const { leads, analysisAnimPlayed, markAnalysisPlayed } = useDashboard();
+  const { leads, dataMode, analysisAnimPlayed, markAnalysisPlayed } = useDashboard();
   const [phase, setPhase] = useState(-1);
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
@@ -170,7 +170,7 @@ export default function AnalysisAnimation() {
   }, []);
 
   useEffect(() => {
-    if (leadsLen === 0) return;
+    if (leadsLen === 0 || dataMode !== 'live') return;
     if (analysisAnimPlayed) return;
     if (prefersReduced.current) {
       markAnalysisPlayed();
@@ -179,7 +179,7 @@ export default function AnalysisAnimation() {
     setPhase(0);
     setVisible(true);
     setExiting(false);
-  }, [leadsLen, analysisAnimPlayed, markAnalysisPlayed]);
+  }, [leadsLen, dataMode, analysisAnimPlayed, markAnalysisPlayed]);
 
   useEffect(() => {
     if (!visible || phase < 0) return;
