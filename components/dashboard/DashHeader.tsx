@@ -29,7 +29,7 @@ export default function DashHeader() {
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">V</span>
           <span className="font-bold text-sm whitespace-nowrap">Vouch</span>
         </a>
-        <span className="hidden xl:inline text-[10px] font-medium text-th-faint">Business Decision Intelligence</span>
+        <span className="hidden 2xl:inline text-[10px] font-medium text-th-faint">Business Decision Intelligence</span>
         {dataMode === 'demo' ? (
           <span className="hidden sm:inline text-amber-500 text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
             SAMPLE DATA
@@ -44,7 +44,7 @@ export default function DashHeader() {
 
       {/* Period selector — shown only on dashboard */}
       {showPeriod && (
-        <div className="hidden lg:flex items-center gap-1 shrink-0">
+        <div className="hidden 2xl:flex items-center gap-1 shrink-0">
           {PERIOD_OPTIONS.map(opt => (
             <button
               key={opt.id}
@@ -68,7 +68,7 @@ export default function DashHeader() {
         {showPeriod && analyzedStr && (
           <button
             onClick={refreshAnalysis}
-            className="hidden md:flex items-center gap-1.5 text-th-faint hover:text-th-muted text-[10px] transition-colors"
+            className="hidden 2xl:flex items-center gap-1.5 text-th-faint hover:text-th-muted text-[10px] transition-colors"
             title="Refresh analysis"
           >
             <RefreshCw size={10} />
@@ -79,7 +79,7 @@ export default function DashHeader() {
         {showPeriod && dataMode === 'demo' && (
           <button
             onClick={refreshAnalysis}
-            className="flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
+            className="hidden xl:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
             title="Refresh sample-data analysis"
           >
             <RotateCcw size={12} />
@@ -98,7 +98,7 @@ export default function DashHeader() {
 
         <button
           onClick={() => setShowGuide(true)}
-          className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
+          className="hidden 2xl:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
         >
           <FileQuestion size={13} />
           <span>How it Works</span>
@@ -108,7 +108,7 @@ export default function DashHeader() {
           href="https://yourvouch.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden lg:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
+          className="hidden 2xl:flex items-center gap-1.5 text-th-muted hover:text-th-heading text-xs transition-colors"
         >
           Back to Website <ExternalLink size={11} />
         </a>
