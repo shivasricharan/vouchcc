@@ -1,24 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, CircleDollarSign, MessageCircle, ShieldCheck, Target, TrendingUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, CircleDollarSign, MessageCircle, ShieldCheck, Target, TimerReset, Upload } from 'lucide-react';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import DashHeader from './DashHeader';
 import UploadModal from './UploadModal';
 import RoleSwitcher from './RoleSwitcher';
 import PriorityHero from './PriorityHero';
-import DecisionFeed from './DecisionFeed';
 import AnalysisAnimation from './AnalysisAnimation';
 import PipelineFlow from './PipelineFlow';
-import OpportunityBubbleMap from './OpportunityBubbleMap';
-import StageDistribution from './StageDistribution';
-import PriorityMatrix from './PriorityMatrix';
 import ActionCentre from './ActionCentre';
-import OutcomeComparison from './OutcomeComparison';
 import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
-import DecisionLoop from './DecisionLoop';
 import DecisionReview from './DecisionReview';
 
 const TALK_URL = 'https://yourvouch.com/?from=demo#discuss-results';
@@ -31,17 +25,15 @@ function money(value: number): string {
 }
 
 function CompactSnapshot() {
-  const { leads, stats, actions } = useDashboard();
-  const openActions = actions.filter(action => !['completed', 'dismissed'].includes(action.status));
+  const { leads, stats } = useDashboard();
   const items = [
-    { label: 'Needs attention', value: stats.stuckCount, detail: 'inactive for 7+ days', icon: Target },
-    { label: 'Open opportunities', value: stats.openCount, detail: `${leads.length} total records`, icon: TrendingUp },
-    { label: 'Value at risk', value: money(stats.atRiskValue), detail: 'stalled open value', icon: CircleDollarSign },
-    { label: 'Actions ready', value: openActions.length, detail: 'priorities to review', icon: CheckCircle2 },
+    { label: 'Needs follow-up', value: stats.followUpCount, detail: `from ${leads.length} records analysed`, icon: Target },
+    { label: 'Stalled 7+ days', value: stats.stuckCount, detail: 'open opportunities losing momentum', icon: TimerReset },
+    { label: 'Value at risk', value: money(stats.atRiskValue), detail: 'value attached to stalled records', icon: CircleDollarSign },
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Opportunity snapshot">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Decision snapshot">
       {items.map(item => {
         const Icon = item.icon;
         return (
@@ -60,31 +52,44 @@ function CompactSnapshot() {
 }
 
 function ResultsCTA() {
-  const { stats, dataMode } = useDashboard();
+  const { stats, dataMode, setShowUpload } = useDashboard();
+  const isDemo = dataMode === 'demo';
   return (
     <section className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">Your next step</div>
           <h2 className="text-base font-bold text-th-heading sm:text-lg">
-            {stats.stuckCount > 0
+            {isDemo
+              ? 'See what Vouch finds in your own business data.'
+              : stats.stuckCount > 0
               ? `Vouch found ${stats.stuckCount} stalled opportunities${stats.atRiskValue > 0 ? ` worth ${money(stats.atRiskValue)}` : ''}.`
               : 'Your pipeline is ready for a focused review.'}
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-th-muted sm:text-sm">
-            Want help deciding what to act on first? Share the result, not your confidential data, and start with a short conversation.
+            {isDemo
+              ? 'Upload a CSV or Excel file and get a private, focused decision brief in about 60 seconds.'
+              : 'Want help deciding what to act on first? Share the result, not your confidential data, and start with a short conversation.'}
           </p>
           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-th-faint">
-            <ShieldCheck size={12} /> {dataMode === 'demo' ? 'This is sample data.' : 'Your uploaded data stays private during this session.'}
+            <ShieldCheck size={12} /> {isDemo ? 'This is sample data.' : 'Your uploaded data stays private during this session.'}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
-            <MessageCircle size={15} /> Discuss my results
-          </a>
-          <a href="#quick-actions" className="inline-flex items-center gap-2 rounded-lg border border-th-border bg-th-surface px-4 py-2.5 text-sm font-semibold text-th-heading transition-colors hover:bg-th-hover">
-            Continue exploring <ArrowRight size={14} />
-          </a>
+          {isDemo ? (
+            <>
+              <button onClick={() => setShowUpload(true)} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
+                <Upload size={15} /> Upload my data
+              </button>
+              <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-th-border bg-th-surface px-4 py-2.5 text-sm font-semibold text-th-heading transition-colors hover:bg-th-hover">
+                <MessageCircle size={15} /> Discuss a pilot
+              </a>
+            </>
+          ) : (
+            <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
+              <MessageCircle size={15} /> Discuss my results
+            </a>
+          )}
         </div>
       </div>
     </section>
@@ -93,29 +98,30 @@ function ResultsCTA() {
 
 function QuickActions() {
   const { actions, updateActionStatus } = useDashboard();
-  const topActions = actions.filter(action => !['completed', 'dismissed'].includes(action.status)).slice(0, 3);
-  if (topActions.length === 0) return null;
+  const activeActions = actions.filter(action => !['completed', 'dismissed'].includes(action.status));
+  const topPriority = activeActions.find(action => action.urgency === 'critical') ?? activeActions[0];
+  const nextActions = activeActions.filter(action => action.id !== topPriority?.id).slice(0, 2);
+  if (nextActions.length === 0) return null;
 
   return (
-    <section id="quick-actions" className="scroll-mt-20">
-      <div className="mb-3 flex items-end justify-between gap-3">
+    <section id="quick-actions" className="h-full scroll-mt-20 rounded-xl border border-th-border bg-th-surface p-5">
+      <div className="mb-4">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">Act next</div>
-          <h2 className="mt-1 text-base font-bold text-th-heading">Three actions to review first</h2>
+          <h2 className="mt-1 text-base font-bold text-th-heading">Then review these two</h2>
         </div>
-        <span className="text-[10px] text-th-faint">Prioritised from your data</span>
       </div>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        {topActions.map((action, index) => (
-          <article key={action.id} className="rounded-xl border border-th-border bg-th-surface p-4">
+      <div className="space-y-3">
+        {nextActions.map((action, index) => (
+          <article key={action.id} className="rounded-lg border border-th-border bg-th-hover/40 p-3.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold text-blue-500">0{index + 1}</span>
               <span className="text-[10px] text-th-faint">{action.dueDate}</span>
             </div>
-            <h3 className="mt-3 text-sm font-semibold leading-snug text-th-heading">{action.title}</h3>
+            <h3 className="mt-2 text-sm font-semibold leading-snug text-th-heading">{action.title}</h3>
             <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-th-muted">{action.businessImpact}</p>
             <div className="mt-4 flex items-center justify-between gap-2">
-              <span className="text-[10px] text-th-faint">Owner: {action.owner}</span>
+              <span className="truncate text-[10px] text-th-faint">Owner: {action.owner}</span>
               {action.status === 'recommended' && <button onClick={() => updateActionStatus(action.id, 'assigned')} className="rounded-md bg-blue-600 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-blue-500">Assign →</button>}
               {action.status === 'assigned' && <button onClick={() => updateActionStatus(action.id, 'in_progress')} className="rounded-md bg-amber-500/15 px-2.5 py-1.5 text-[10px] font-semibold text-amber-500 hover:bg-amber-500/25">Start →</button>}
               {action.status === 'in_progress' && <button onClick={() => updateActionStatus(action.id, 'completed')} className="rounded-md bg-green-500/15 px-2.5 py-1.5 text-[10px] font-semibold text-green-500 hover:bg-green-500/25">Complete →</button>}
@@ -124,19 +130,6 @@ function QuickActions() {
         ))}
       </div>
     </section>
-  );
-}
-
-function FinalCTA() {
-  return (
-    <div className="rounded-xl border border-blue-500/20 bg-th-surface p-6 text-center">
-      <div className="mb-1 text-base font-bold text-th-heading">Ready to review your real opportunities?</div>
-      <p className="mx-auto mb-4 max-w-md text-sm text-th-muted">Start with a short conversation about what Vouch found and whether a 14-day audit makes sense.</p>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">Discuss my results</a>
-        <a href="https://yourvouch.com" target="_blank" rel="noopener noreferrer" className="text-sm text-th-muted transition-colors hover:text-th-heading">Back to Vouch →</a>
-      </div>
-    </div>
   );
 }
 
@@ -168,7 +161,7 @@ function MappingCard() {
 }
 
 function DashboardContent() {
-  const { view, showUpload, showGuide, dataMode } = useDashboard();
+  const { view, showUpload, showGuide, dataMode, leads } = useDashboard();
   const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
 
   return (
@@ -184,24 +177,29 @@ function DashboardContent() {
                   {dataMode === 'demo' ? 'Sample data' : 'Uploaded data'}
                 </span>
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-th-heading sm:text-2xl">Here’s what needs your attention.</h1>
-              <p className="mt-1 max-w-2xl text-xs text-th-muted sm:text-sm">Start with the few priorities most likely to affect outcomes.</p>
+              <h1 className="text-xl font-bold tracking-tight text-th-heading sm:text-2xl">
+                {dataMode === 'demo' ? 'See what needs attention—in 60 seconds.' : 'Your 60-second decision brief.'}
+              </h1>
+              <p className="mt-1 max-w-2xl text-xs text-th-muted sm:text-sm">
+                {dataMode === 'demo'
+                  ? 'A focused example of the decisions Vouch can surface from existing business data.'
+                  : `Vouch analysed ${leads.length} records and prioritised what deserves action now.`}
+              </p>
             </section>
 
             <CompactSnapshot />
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <div className="lg:col-span-2"><PriorityHero /></div>
-              <div><DecisionFeed /></div>
+              <div><QuickActions /></div>
             </div>
 
             <ResultsCTA />
-            <QuickActions />
 
             <div className="flex justify-center py-1">
               <button onClick={() => setShowDeepAnalysis(value => !value)} className="inline-flex items-center gap-2 rounded-lg border border-th-border bg-th-surface px-4 py-2.5 text-sm font-semibold text-th-heading transition-colors hover:bg-th-hover">
                 {showDeepAnalysis ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                {showDeepAnalysis ? 'Hide deeper analysis' : 'Explore deeper analysis'}
+                {showDeepAnalysis ? 'Hide supporting analysis' : 'See how Vouch reached this'}
               </button>
             </div>
 
@@ -209,21 +207,16 @@ function DashboardContent() {
               <div className="space-y-6 animate-fade-up">
                 <section className="rounded-xl border border-th-border bg-th-surface p-4 sm:p-5">
                   <div className="mb-3">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">Optional team views</div>
-                    <h2 className="mt-1 text-base font-bold text-th-heading">Explore the same data from a team perspective</h2>
-                    <p className="mt-1 text-xs text-th-muted">Switch views only when you need sales, marketing, finance or execution detail.</p>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">Supporting analysis</div>
+                    <h2 className="mt-1 text-base font-bold text-th-heading">Understand the signals behind the brief</h2>
+                    <p className="mt-1 text-xs text-th-muted">Use a team view only when you need more context for sales, marketing, finance or execution.</p>
                   </div>
                   <RoleSwitcher />
                 </section>
                 <DecisionReview />
                 <div id="pipeline-flow" className="scroll-mt-20 rounded-xl border border-th-border bg-th-surface p-5"><PipelineFlow /></div>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3"><div className="lg:col-span-2"><OpportunityBubbleMap /></div><div><StageDistribution /></div></div>
-                <div className="rounded-xl border border-th-border bg-th-surface p-5"><PriorityMatrix /></div>
                 <ActionCentre />
-                <DecisionLoop />
-                <OutcomeComparison />
                 <MappingCard />
-                <FinalCTA />
               </div>
             )}
 
