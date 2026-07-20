@@ -3,10 +3,10 @@
 import { useMemo } from 'react';
 import { useDashboard } from '@/context/DashboardContext';
 import { URGENCY_COLORS, URGENCY_LABELS } from '@/lib/actionTypes';
-import { ArrowRight, AlertTriangle, Target, Users } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Play, Target, UserPlus, Users } from 'lucide-react';
 
 export default function PriorityHero() {
-  const { actions, stats } = useDashboard();
+  const { actions, updateActionStatus } = useDashboard();
 
   const topAction = useMemo(() => {
     const active = actions.filter(a => a.status !== 'completed' && a.status !== 'dismissed');
@@ -81,12 +81,24 @@ export default function PriorityHero() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Decision */}
       <div className="flex items-center justify-between pt-3 border-t border-th-border">
         <span className="text-th-faint text-[10px]">Confidence: {confidence}%</span>
-        <a href="#action-centre" className="flex items-center gap-1 text-blue-500 hover:text-blue-400 text-xs font-semibold transition-colors">
-          Review in Action Centre <ArrowRight size={11} />
-        </a>
+        {topAction.status === 'recommended' && (
+          <button onClick={() => updateActionStatus(topAction.id, 'assigned')} className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-500">
+            <UserPlus size={12} /> Assign action
+          </button>
+        )}
+        {topAction.status === 'assigned' && (
+          <button onClick={() => updateActionStatus(topAction.id, 'in_progress')} className="flex items-center gap-1.5 rounded-md bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-500 transition-colors hover:bg-amber-500/25">
+            <Play size={12} /> Start action
+          </button>
+        )}
+        {topAction.status === 'in_progress' && (
+          <button onClick={() => updateActionStatus(topAction.id, 'completed')} className="flex items-center gap-1.5 rounded-md bg-green-500/15 px-3 py-1.5 text-xs font-semibold text-green-500 transition-colors hover:bg-green-500/25">
+            <CheckCircle2 size={12} /> Mark complete
+          </button>
+        )}
       </div>
     </div>
   );
