@@ -142,7 +142,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [feedEvents, setFeedEvents] = useState<DecisionFeedEvent[]>([]);
   const [period, setPeriod] = useState<PeriodId>('all');
   const [ripple, setRipple] = useState<RippleEvent | null>(null);
-  const [analysisAnimPlayed, setAnalysisAnimPlayed] = useState(false);
+  const [analysisAnimPlayed, setAnalysisAnimPlayed] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem('vouch-theme');
@@ -273,6 +273,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [addFeedEvent]);
 
   const loadLiveData = useCallback((rows: UniversalLead[], name: string, confidence: number, meta?: MappingMeta) => {
+    setAnalysisAnimPlayed(false);
     setLeads(rows);
     setDataMode('live');
     setFileName(name);
@@ -294,6 +295,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadSampleData = useCallback((sampleLeads: UniversalLead[], templateName: string, tid: TemplateId) => {
+    setAnalysisAnimPlayed(true);
     setLeads(sampleLeads);
     setDataMode('demo');
     setFileName(templateName);
@@ -306,6 +308,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadDemoData = useCallback(() => {
+    setAnalysisAnimPlayed(true);
     setLeads(getSampleLeads('generic'));
     setDataMode('demo');
     setFileName('Sample Business');
