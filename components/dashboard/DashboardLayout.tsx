@@ -67,7 +67,7 @@ function ResultsCTA() {
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-th-muted sm:text-sm">
             {isDemo
-              ? 'Upload a CSV or Excel file and get a private, focused decision brief in about 60 seconds.'
+              ? 'Upload a lead, sales or customer CSV/Excel file and get a private decision brief in about 60 seconds.'
               : 'Keep this brief for your team, or see exactly what Vouch configures during the guided pilot.'}
           </p>
           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-th-faint">
@@ -151,12 +151,12 @@ function DashboardContent() {
               </h1>
               <p className="mt-1 max-w-2xl text-xs text-th-muted sm:text-sm">
                 {dataMode === 'demo'
-                  ? 'A focused example of the decisions Vouch can surface from existing business data.'
+                  ? 'A professional-services example. Upload your own data to see decisions relevant to your business.'
                   : `Vouch analysed ${leads.length} records and prioritised what deserves action now.`}
               </p>
               <div className="mt-2 text-[11px] text-th-faint">
                 {dataMode === 'demo'
-                  ? `Sample business data · ${leads.length} records`
+                  ? `Sample consulting pipeline · ${leads.length} records`
                   : `${fileName || 'Uploaded file'} · ${mappingConfidence}% mapping confidence`}
               </div>
             </section>
