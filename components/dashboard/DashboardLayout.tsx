@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, CircleDollarSign, MessageCircle, ShieldCheck, Target, TimerReset, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, CircleDollarSign, Mail, MessageCircle, ShieldCheck, Target, TimerReset, Upload } from 'lucide-react';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import DashHeader from './DashHeader';
 import UploadModal from './UploadModal';
@@ -14,6 +14,7 @@ import GuideView from './views/GuideView';
 import UploadGuideView from './views/UploadGuideView';
 import UploadCSVView from './views/UploadCSVView';
 import DecisionReview from './DecisionReview';
+import EmailDecisionBriefModal from './EmailDecisionBriefModal';
 
 const TALK_URL = 'https://yourvouch.com/?from=demo#discuss-results';
 
@@ -54,7 +55,9 @@ function CompactSnapshot() {
 function ResultsCTA() {
   const { stats, dataMode, setShowUpload } = useDashboard();
   const isDemo = dataMode === 'demo';
+  const [showEmailBrief, setShowEmailBrief] = useState(false);
   return (
+    <>
     <section className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -86,13 +89,20 @@ function ResultsCTA() {
               </a>
             </>
           ) : (
-            <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
-              <MessageCircle size={15} /> Discuss my results
-            </a>
+            <>
+              <button onClick={() => setShowEmailBrief(true)} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500">
+                <Mail size={15} /> Email this brief
+              </button>
+              <a href={TALK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-th-border bg-th-surface px-4 py-2.5 text-sm font-semibold text-th-heading transition-colors hover:bg-th-hover">
+                <MessageCircle size={15} /> Discuss my results
+              </a>
+            </>
           )}
         </div>
       </div>
     </section>
+    {showEmailBrief && <EmailDecisionBriefModal onClose={() => setShowEmailBrief(false)} />}
+    </>
   );
 }
 
