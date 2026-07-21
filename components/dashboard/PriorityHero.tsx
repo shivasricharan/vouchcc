@@ -49,10 +49,10 @@ export default function PriorityHero() {
         {topAction.title}
       </h2>
 
-      {/* Impact row */}
+      {/* Decision basis */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2.5">
-          <div className="text-th-faint text-[10px] uppercase tracking-wide mb-0.5">Potential Impact</div>
+          <div className="text-th-faint text-[10px] uppercase tracking-wide mb-0.5">Why it matters</div>
           <div className="text-red-400 font-bold text-sm">{topAction.businessImpact}</div>
         </div>
         <div className="bg-th-hover rounded-lg px-3 py-2.5">
@@ -61,10 +61,10 @@ export default function PriorityHero() {
         </div>
       </div>
 
-      {/* Source + why */}
+      {/* Evidence */}
       <div className="flex items-start gap-2 mb-3">
         <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
-        <p className="text-th-muted text-xs leading-relaxed">{topAction.sourceInsight}</p>
+        <p className="text-th-muted text-xs leading-relaxed"><span className="font-semibold text-th-body">Evidence:</span> {topAction.sourceInsight}</p>
       </div>
 
       {/* Owner + outcome */}
@@ -77,7 +77,7 @@ export default function PriorityHero() {
         </div>
         <div className="flex items-center gap-2 text-xs">
           <Target size={11} className="text-th-faint shrink-0" />
-          <span className="text-th-muted">{topAction.expectedOutcome}</span>
+          <span className="text-th-muted"><span className="font-semibold text-th-body">Recommended result:</span> {topAction.expectedOutcome}</span>
         </div>
       </div>
 
