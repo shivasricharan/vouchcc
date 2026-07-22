@@ -9,12 +9,6 @@ import PilotDetailsModal from './PilotDetailsModal';
 import styles from './VisualDecisionDashboard.module.css';
 
 const PALETTE=['#4f8cff','#7c5cff','#2dd4bf','#f2b84b','#f97316','#ef5b7a','#22c55e','#38bdf8'];
-const QUESTIONS=[
-  {id:'attention',label:'What needs attention?',headline:'See what needs attention in your business.',description:'Vouch highlights the records, value and patterns that may need your review now.'},
-  {id:'slowdown',label:'What is slowing down?',headline:'See where momentum is slowing down.',description:'Vouch shows where opportunities are sitting too long and where movement has weakened.'},
-  {id:'next',label:'What should I do next?',headline:'See the next decision worth making.',description:'Vouch reduces competing signals into the most important move to consider first.'},
-  {id:'missing',label:'What am I missing?',headline:'See what may be easy to overlook.',description:'Vouch surfaces incomplete next steps, unusual concentrations and hidden attention gaps.'},
-];
 
 function money(value:number){if(value>=100)return `₹${(value/100).toFixed(1)}Cr`;if(value>=10)return `₹${Math.round(value)}L`;if(value>0)return `₹${value.toFixed(1)}L`;return '—'}
 function safeDate(value:string){const time=Date.parse(value);return Number.isFinite(time)?new Date(time):null}
@@ -24,8 +18,6 @@ export default function VisualDecisionDashboard(){
   const {leads,stats,dataMode,fileName,mappingConfidence,setShowUpload,actions}=useDashboard();
   const [email,setEmail]=useState(false);
   const [pilot,setPilot]=useState(false);
-  const [question,setQuestion]=useState('attention');
-  const selectedQuestion=QUESTIONS.find(item=>item.id===question)??QUESTIONS[0];
 
   const visuals=useMemo(()=>{
     const stageData=stats.byStage.filter(item=>item.count>0).slice(0,8).map(item=>({name:shortStage(item.stage),fullName:item.stage,count:item.count,value:item.value}));
@@ -46,16 +38,19 @@ export default function VisualDecisionDashboard(){
     return {stageData,sourceData,momentum,heat,maxHeat,top,health,conversion,riskShare};
   },[actions,leads,stats]);
 
-  const priorityTitle=question==='slowdown'?'Review the oldest opportunities that have stopped moving':question==='missing'?'Clarify records with no reliable next step':question==='next'?(visuals.top?.title||'Start with the highest-impact unresolved opportunity'):(visuals.top?.title||'Review the oldest inactive opportunities');
-  const priorityImpact=question==='slowdown'?`${stats.stuckCount} records have remained inactive beyond the healthy attention window.`:question==='missing'?`${stats.followUpCount} records may be missing timely follow-up, ownership or a clear next action.`:(visuals.top?.businessImpact||`${stats.followUpCount} records need a clear next action.`);
+  const priorityTitle=visuals.top?.title||'Review the oldest inactive opportunities';
+  const priorityImpact=visuals.top?.businessImpact||`${stats.followUpCount} records need a clear next action.`;
 
   return <div className={styles.wrap}>
     <section className={styles.topline}>
-      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Explore a sample business':'Your uploaded business data'}</span><h1>{selectedQuestion.headline}</h1><p>{selectedQuestion.description} The view adapts to the data available rather than assuming your industry, team or job title.</p></div>
+      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Explore a sample business':'Your uploaded business data'}</span><h1>See what your business data is trying to tell you.</h1><p>Vouch analyses the data you already have and shows what needs attention, where momentum is slowing, and what action may matter next.</p></div>
       <div className={styles.dataTag}><Sparkles size={14}/><span>{fileName||'Uploaded data'} · {leads.length} records · {mappingConfidence}% mapped</span></div>
     </section>
 
-    <section className={styles.questionBar} aria-label="Choose a business question"><span>What are you trying to understand?</span><div>{QUESTIONS.map(item=><button key={item.id} className={question===item.id?styles.questionActive:''} onClick={()=>setQuestion(item.id)}>{item.label}</button>)}</div></section>
+    <section className={styles.orientation}>
+      <div><span>{dataMode==='demo'?'You are viewing a sample business':'Vouch has analysed your uploaded file'}</span><p>{dataMode==='demo'?`This preview uses ${leads.length} sample records to show how Vouch turns existing business data into a visual decision brief.`:`This view was generated from ${leads.length} records in ${fileName||'your file'}.`}</p></div>
+      {dataMode==='demo'&&<button onClick={()=>setShowUpload(true)}><Upload size={15}/> Upload my CSV</button>}
+    </section>
 
     <section className={styles.kpis}>
       <article><span>Business movement</span><strong>{visuals.health}</strong><small>/100 signal health</small><div className={styles.meter}><i style={{width:`${visuals.health}%`}}/></div></article>
