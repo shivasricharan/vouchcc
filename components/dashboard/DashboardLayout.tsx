@@ -63,8 +63,12 @@ function ConversionBar() {
   const [pilot,setPilot]=useState(false);
   return <>
     <section className="conversion-bar">
-      <div><Sparkles size={18}/><span>{dataMode==='demo'?'See what Vouch finds in your own data.':'Share this decision with your team.'}</span></div>
-      <div>{dataMode==='demo'?<button className="conversion-secondary" onClick={()=>setShowUpload(true)}><Upload size={16}/> Upload my data</button>:<button className="conversion-secondary" onClick={()=>setEmail(true)}><Mail size={16}/> Email this brief</button>}<button className="conversion-primary" onClick={()=>setPilot(true)}>Start ₹9,999 pilot <ArrowRight size={15}/></button></div>
+      <div><Sparkles size={18}/><span>{dataMode==='demo'?'Explore freely, then email this sample brief to your team.':'Share this decision with your team.'}</span></div>
+      <div>
+        {dataMode==='demo'&&<button className="conversion-secondary" onClick={()=>setShowUpload(true)}><Upload size={16}/> Upload my data</button>}
+        <button className="conversion-secondary" onClick={()=>setEmail(true)}><Mail size={16}/> Email this brief</button>
+        <button className="conversion-primary" onClick={()=>setPilot(true)}>Request ₹9,999 pilot <ArrowRight size={15}/></button>
+      </div>
     </section>
     {email&&<EmailDecisionBriefModal onClose={()=>setEmail(false)}/>} {pilot&&<PilotDetailsModal onClose={()=>setPilot(false)}/>} 
   </>;
@@ -77,7 +81,7 @@ function DashboardContent(){
     <main className="demo-main">
       {view==='dashboard'&&<div className="decision-review-shell">
         <section className="decision-opening animate-fade-up">
-          <div><h1>{dataMode==='demo'?'See what needs your attention.':'Here is what needs your attention.'}</h1><p>{dataMode==='demo'?'Explore a sample result, or upload your own CSV to see decisions relevant to your business.':`Vouch analysed ${leads.length} records and found the decisions most likely to move your business.`}</p></div>
+          <div><h1>{dataMode==='demo'?'See what needs your attention.':'Here is what needs your attention.'}</h1><p>{dataMode==='demo'?'Explore a sample result without sharing any details. Upload your own CSV when ready, or email the brief to discuss it with your team.':`Vouch analysed ${leads.length} records and found the decisions most likely to move your business.`}</p></div>
           <div className="analysis-context"><ShieldCheck size={13}/>{dataMode==='demo'?`Sample professional-services pipeline · ${leads.length} records`:`${fileName||'Uploaded file'} · ${mappingConfidence}% mapping confidence`}</div>
         </section>
         <Snapshot/>
@@ -87,7 +91,7 @@ function DashboardContent(){
           <NextTwoActions/>
         </section>
         <ConversionBar/>
-        <p className="privacy-note">Your uploaded data stays private during this session.</p>
+        <p className="privacy-note">No sign-up is required to explore. Raw uploaded data stays in this browser session; only aggregated insights are included when you request an email brief.</p>
       </div>}
       {view==='upload'&&<UploadCSVView/>}{view==='guide'&&<GuideView/>}
     </main>
