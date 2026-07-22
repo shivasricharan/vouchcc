@@ -47,9 +47,13 @@ export default function VisualDecisionDashboard(){
       <div className={styles.dataTag}><Sparkles size={14}/><span>{fileName||'Uploaded data'} · {leads.length} records · {mappingConfidence}% mapped</span></div>
     </section>
 
-    <section className={styles.orientation}>
-      <div><span>{dataMode==='demo'?'You are viewing a sample business':'Vouch has analysed your uploaded file'}</span><p>{dataMode==='demo'?`This preview uses ${leads.length} sample records to show how Vouch turns existing business data into a visual decision brief.`:`This view was generated from ${leads.length} records in ${fileName||'your file'}.`}</p></div>
-      {dataMode==='demo'&&<button onClick={()=>setShowUpload(true)}><Upload size={15}/> Upload my CSV</button>}
+    <section className={styles.orientation} aria-label={dataMode==='demo'?'Sample business preview':'Uploaded file analysis'}>
+      <div className={styles.orientationCopy}>
+        <span className={styles.orientationLabel}>{dataMode==='demo'?'Sample business preview':'Your analysis is ready'}</span>
+        <strong>{dataMode==='demo'?`${leads.length} sample records are already analysed.`:`${leads.length} records from ${fileName||'your file'} are analysed.`}</strong>
+        <p>{dataMode==='demo'?'Explore the visual findings below, or replace the sample with your own CSV to see what Vouch finds in your business.':'The visual findings below are generated from the data available in your uploaded file.'}</p>
+      </div>
+      {dataMode==='demo'&&<button className={styles.orientationCta} type="button" onClick={()=>setShowUpload(true)}><Upload size={17}/><span>Upload my CSV</span><ArrowRight size={15}/></button>}
     </section>
 
     <section className={styles.kpis}>
@@ -76,9 +80,7 @@ export default function VisualDecisionDashboard(){
 
     <section className={styles.visualGrid}>
       <article className={styles.panel}><header><div><span>Data distribution</span><h2>Where records are currently sitting</h2></div><BarChart3 size={18}/></header><div className={styles.chartMedium}><ResponsiveContainer width="100%" height="100%"><BarChart data={visuals.stageData} layout="vertical" margin={{left:4,right:8}}><XAxis type="number" hide/><YAxis dataKey="name" type="category" width={92} tick={{fill:'#8da0b8',fontSize:10}} axisLine={false} tickLine={false}/><Tooltip cursor={{fill:'rgba(79,140,255,.05)'}} contentStyle={{background:'#091421',border:'1px solid rgba(137,167,207,.18)',borderRadius:10,fontSize:11}}/><Bar dataKey="count" radius={[0,7,7,0]}>{visuals.stageData.map((_,index)=><Cell key={index} fill={PALETTE[index%PALETTE.length]}/>)}</Bar></BarChart></ResponsiveContainer></div></article>
-
       <article className={styles.panel}><header><div><span>Attention heatmap</span><h2>How long records remain untouched</h2></div><Eye size={18}/></header><div className={styles.heatmap}>{visuals.heat.map((item,index)=>{const intensity=item.value/visuals.maxHeat;return <div key={item.label}><span>{item.label}</span><i style={{opacity:.18+intensity*.82,transform:`scaleY(${.45+intensity*.55})`}}/><b>{item.value}</b><small>{index<2?'Recent':'Review'}</small></div>})}</div><p className={styles.microcopy}>Darker columns indicate a larger concentration of records that have not moved recently.</p></article>
-
       <article className={`${styles.panel} ${styles.sourcePanel}`}><header><div><span>Source mix</span><h2>Where these records originated</h2></div><Sparkles size={18}/></header><div className={styles.sourceSplit}><div className={styles.donut}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={visuals.sourceData} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={3} isAnimationActive={false}>{visuals.sourceData.map((_,index)=><Cell key={index} fill={PALETTE[index%PALETTE.length]}/>)}</Pie></PieChart></ResponsiveContainer><div className={styles.donutTotal}><b>{stats.total}</b><span>records</span></div></div><div className={styles.legend}>{visuals.sourceData.map((item,index)=><div key={item.name}><i style={{background:PALETTE[index%PALETTE.length]}}/><span>{item.name}</span><b>{item.value}</b></div>)}</div></div></article>
     </section>
 
