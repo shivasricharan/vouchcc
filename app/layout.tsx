@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vouch Demo — Know What Needs Attention',
-  description: 'Upload business data and see which opportunities need attention, why they matter, and what to do next.',
+  title: 'Vouch Demo — See What Needs Attention in Your Business',
+  description: 'Upload the business data you already have and see what is stuck, what is changing and what you should act on next.',
   openGraph: {
-    title: 'Vouch Demo — Know What Needs Attention',
-    description: 'Upload business data and see which opportunities need attention, why they matter, and what to do next.',
+    title: 'Vouch Demo — See What Needs Attention in Your Business',
+    description: 'A visual, adaptive decision view shaped by your data and the business question you are trying to answer.',
     url: 'https://demo.yourvouch.com',
     siteName: 'Vouch Demo',
     type: 'website',
