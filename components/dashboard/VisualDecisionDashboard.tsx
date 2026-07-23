@@ -1,93 +1,80 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ArrowRight, BarChart3, Eye, LockKeyhole, Mail, Sparkles, Target, TrendingUp, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Mail, RefreshCw, Upload, UserRoundCheck } from 'lucide-react';
 import { useDashboard } from '@/context/DashboardContext';
 import EmailDecisionBriefModal from './EmailDecisionBriefModal';
 import PilotDetailsModal from './PilotDetailsModal';
 import styles from './VisualDecisionDashboard.module.css';
 
-const PALETTE=['#4f8cff','#7c5cff','#2dd4bf','#f2b84b','#f97316','#ef5b7a','#22c55e','#38bdf8'];
-
 function money(value:number){if(value>=100)return `₹${(value/100).toFixed(1)}Cr`;if(value>=10)return `₹${Math.round(value)}L`;if(value>0)return `₹${value.toFixed(1)}L`;return '—'}
-function safeDate(value:string){const time=Date.parse(value);return Number.isFinite(time)?new Date(time):null}
-function shortStage(value:string){return value.length>16?`${value.slice(0,15)}…`:value}
 
 export default function VisualDecisionDashboard(){
   const {leads,stats,dataMode,fileName,mappingConfidence,setShowUpload,actions}=useDashboard();
   const [email,setEmail]=useState(false);
   const [pilot,setPilot]=useState(false);
+  const [done,setDone]=useState(false);
+  const [stage,setStage]=useState<'morning'|'action'|'closure'>('morning');
 
-  const visuals=useMemo(()=>{
-    const stageData=stats.byStage.filter(item=>item.count>0).slice(0,8).map(item=>({name:shortStage(item.stage),fullName:item.stage,count:item.count,value:item.value}));
-    const sourceData=Object.entries(stats.sourceCounts).filter(([,count])=>count>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,value])=>({name,value}));
-    const dated=leads.map(lead=>({lead,date:safeDate(lead.createdAt)||safeDate(lead.lastContacted)})).filter(item=>item.date).sort((a,b)=>a.date!.getTime()-b.date!.getTime());
-    const momentumMap=new Map<string,{name:string,created:number,moved:number}>();
-    dated.forEach(({lead,date})=>{const key=date!.toLocaleDateString('en-IN',{month:'short',day:'numeric'});const item=momentumMap.get(key)||{name:key,created:0,moved:0};item.created+=1;if(lead.daysSinceUpdate<=7)item.moved+=1;momentumMap.set(key,item)});
-    let momentum=Array.from(momentumMap.values()).slice(-10);
-    if(momentum.length<4){momentum=['W1','W2','W3','W4','Now'].map((name,index)=>({name,created:Math.max(1,Math.round(leads.length*(.12+index*.035))),moved:Math.max(1,Math.round(leads.length*(.06+index*.028)))}))}
-    const ages=[{label:'0–3d',min:0,max:3},{label:'4–7d',min:4,max:7},{label:'8–14d',min:8,max:14},{label:'15–30d',min:15,max:30},{label:'30d+',min:31,max:9999}];
-    const heat=ages.map(bucket=>({label:bucket.label,value:leads.filter(l=>l.daysSinceUpdate>=bucket.min&&l.daysSinceUpdate<=bucket.max).length}));
-    const maxHeat=Math.max(...heat.map(i=>i.value),1);
-    const activeActions=actions.filter(a=>!['completed','dismissed'].includes(a.status));
-    const top=activeActions.find(a=>a.urgency==='critical')||activeActions[0];
-    const health=Math.max(18,Math.min(96,Math.round(100-((stats.stuckCount+stats.followUpCount*.65)/Math.max(stats.total,1))*100)));
-    const conversion=stats.total?Math.round((stats.wonCount/stats.total)*100):0;
-    const riskShare=stats.pipelineValue?Math.round((stats.atRiskValue/stats.pipelineValue)*100):0;
-    return {stageData,sourceData,momentum,heat,maxHeat,top,health,conversion,riskShare};
-  },[actions,leads,stats]);
+  const insight=useMemo(()=>{
+    const active=actions.filter(a=>!['completed','dismissed'].includes(a.status));
+    const top=active.find(a=>a.urgency==='critical')||active[0];
+    const owner=(top as any)?.owner||(top as any)?.assignedTo||'Business owner';
+    return {
+      top,
+      title:top?.title||'Review the oldest inactive business items',
+      impact:top?.businessImpact||`${stats.followUpCount} records need a clear next action.`,
+      owner,
+      attention:Math.max(stats.followUpCount,stats.stuckCount),
+      decisions:Math.max(1,Math.min(3,Math.ceil(stats.stuckCount/4))),
+    };
+  },[actions,stats]);
 
-  const priorityTitle=visuals.top?.title||'Review the oldest inactive opportunities';
-  const priorityImpact=visuals.top?.businessImpact||`${stats.followUpCount} records need a clear next action.`;
+  function takeAction(){setDone(true);setStage('closure')}
 
   return <div className={styles.wrap}>
     <section className={styles.topline}>
-      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Explore a sample business':'Your uploaded business data'}</span><h1>See what your business data is trying to tell you.</h1><p>Vouch analyses the data you already have and shows what needs attention, where momentum is slowing, and what action may matter next.</p></div>
-      <div className={styles.dataTag}><Sparkles size={14}/><span>{fileName||'Uploaded data'} · {leads.length} records · {mappingConfidence}% mapped</span></div>
+      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Live sample business':'Your uploaded business'}</span><h1>Vouch shows what needs attention—and helps move the next action.</h1><p>This experience demonstrates the operating loop: observe business signals, detect what is stuck, identify ownership, recommend action and verify completion.</p></div>
+      <div className={styles.dataTag}>{fileName||'Sample business'} · {leads.length} records · {mappingConfidence}% mapped</div>
     </section>
 
-    <section className={styles.orientation} aria-label={dataMode==='demo'?'Sample business preview':'Uploaded file analysis'}>
-      <div className={styles.orientationCopy}>
-        <span className={styles.orientationLabel}>{dataMode==='demo'?'Sample business preview':'Your analysis is ready'}</span>
-        <strong>{dataMode==='demo'?`${leads.length} sample records are already analysed.`:`${leads.length} records from ${fileName||'your file'} are analysed.`}</strong>
-        <p>{dataMode==='demo'?'Explore the visual findings below, or replace the sample with your own CSV to see what Vouch finds in your business.':'The visual findings below are generated from the data available in your uploaded file.'}</p>
-      </div>
-      {dataMode==='demo'&&<button className={styles.orientationCta} type="button" onClick={()=>setShowUpload(true)}><Upload size={17}/><span>Upload my CSV</span><ArrowRight size={15}/></button>}
+    <section className={styles.modeBar}>
+      <div className={styles.modeTabs}>{[
+        ['morning','Morning brief'],['action','Action view'],['closure','Evening closure']
+      ].map(([key,label])=><button key={key} className={stage===key?styles.active:''} onClick={()=>setStage(key as any)}>{label}</button>)}</div>
+      {dataMode==='demo'&&<button className={styles.uploadButton} onClick={()=>setShowUpload(true)}><Upload size={15}/> Use my CSV</button>}
     </section>
 
-    <section className={styles.kpis}>
-      <article><span>Business movement</span><strong>{visuals.health}</strong><small>/100 signal health</small><div className={styles.meter}><i style={{width:`${visuals.health}%`}}/></div></article>
-      <article><span>Needs attention</span><strong>{stats.followUpCount}</strong><small>{Math.round(stats.followUpCount/Math.max(stats.total,1)*100)}% of records</small></article>
-      <article><span>Value potentially affected</span><strong>{money(stats.atRiskValue)}</strong><small>{visuals.riskShare}% of open value</small></article>
-      <article><span>Outcome signal</span><strong>{visuals.conversion}%</strong><small>{stats.wonCount} won · {stats.lostCount} lost</small></article>
-    </section>
+    {stage==='morning'&&<>
+      <section className={styles.briefHero}>
+        <div className={styles.briefCopy}><span>Today’s operating brief</span><h2>Your business does not need another dashboard. It needs to know what deserves attention now.</h2><p>Vouch condenses scattered activity into a few signals and one decision that can change the day.</p></div>
+        <div className={styles.metrics}><div><strong>{leads.length}</strong><span>active records</span></div><div><strong>{insight.attention}</strong><span>need attention</span></div><div><strong>{insight.decisions}</strong><span>owner decisions</span></div><div><strong>{money(stats.atRiskValue)}</strong><span>potentially affected</span></div></div>
+      </section>
+      <section className={styles.priorityCard}>
+        <div className={styles.priorityIcon}><AlertTriangle size={24}/></div>
+        <div><span>Highest-priority signal</span><h2>{insight.title}</h2><p>{insight.impact}</p></div>
+        <button onClick={()=>setStage('action')}>Review action <ArrowRight size={16}/></button>
+      </section>
+      <section className={styles.signalFlow}>{[
+        ['Observe',`${leads.length} records read from ${fileName||'the current business view'}`],
+        ['Detect',`${insight.attention} items show delay, inactivity or missing next steps`],
+        ['Prioritise',`${insight.decisions} items require management attention today`],
+      ].map(([title,text],index)=><div key={title}><i>0{index+1}</i><b>{title}</b><span>{text}</span></div>)}</section>
+    </>}
 
-    <section className={styles.heroGrid}>
-      <article className={`${styles.panel} ${styles.momentum}`}>
-        <header><div><span>Momentum over time</span><h2>Is your business data showing movement?</h2></div><TrendingUp size={18}/></header>
-        <div className={styles.chartLarge}><ResponsiveContainer width="100%" height="100%"><AreaChart data={visuals.momentum}><defs><linearGradient id="created" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f8cff" stopOpacity={.45}/><stop offset="100%" stopColor="#4f8cff" stopOpacity={0}/></linearGradient><linearGradient id="moved" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2dd4bf" stopOpacity={.3}/><stop offset="100%" stopColor="#2dd4bf" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="rgba(132,160,198,.08)" vertical={false}/><XAxis dataKey="name" tick={{fill:'#70839b',fontSize:10}} axisLine={false} tickLine={false}/><YAxis hide/><Tooltip contentStyle={{background:'#091421',border:'1px solid rgba(137,167,207,.18)',borderRadius:10,fontSize:11}}/><Area type="monotone" dataKey="created" stroke="#4f8cff" strokeWidth={2.4} fill="url(#created)"/><Area type="monotone" dataKey="moved" stroke="#2dd4bf" strokeWidth={2} fill="url(#moved)"/></AreaChart></ResponsiveContainer></div>
-        <footer><span><i className={styles.blueDot}/>Records entered</span><span><i className={styles.greenDot}/>Recently moving</span></footer>
-      </article>
+    {stage==='action'&&<section className={styles.actionWorkspace}>
+      <div className={styles.actionMain}><span>Recommended intervention</span><h2>{insight.title}</h2><p>{insight.impact}</p><div className={styles.actionMeta}><div><UserRoundCheck size={16}/><span>Current owner</span><b>{insight.owner}</b></div><div><Clock3 size={16}/><span>Action due</span><b>Today</b></div></div><div className={styles.actionButtons}><button className={styles.primary} onClick={takeAction}>{done?'Action recorded':'Assign and track'} <ArrowRight size={15}/></button><button className={styles.secondary} onClick={()=>setPilot(true)}>See guided pilot</button></div></div>
+      <div className={styles.timeline}><h3>Why Vouch flagged this</h3><div><i/><span>Business item entered the current workflow</span></div><div><i/><span>Activity slowed or the promised next step was not updated</span></div><div className={styles.risk}><i/><span>Delay crossed the attention threshold</span></div><div><i/><span>Vouch recommends ownership and follow-through</span></div></div>
+    </section>}
 
-      <article className={`${styles.panel} ${styles.priority}`}>
-        <header><div><span>Your clearest signal</span><h2>What to consider first</h2></div><Target size={18}/></header>
-        <div className={styles.priorityVisual}><div className={styles.rings}><i/><i/><i/><b>{stats.stuckCount}</b><span>stalled</span></div><div><strong>{priorityTitle}</strong><p>{priorityImpact}</p></div></div>
-        <div className={styles.priorityStrip}><span>Potentially affected</span><b>{money(stats.atRiskValue)}</b></div>
-        <button onClick={()=>setPilot(true)}>Turn this into a guided action plan <ArrowRight size={15}/></button>
-      </article>
-    </section>
+    {stage==='closure'&&<section className={styles.closure}>
+      <CheckCircle2 size={34}/><span>Evening closure</span><h2>{done?'The priority action was recorded and moved forward.':'No completion has been recorded yet.'}</h2><p>{done?'Vouch would now watch for the outcome, escalate if the action stalls again and include the result in the next brief.':'Take the recommended action to experience the complete detect → act → verify loop.'}</p><div className={styles.closureGrid}><div><b>{done?'1':'0'}</b><span>priority actions completed</span></div><div><b>{stats.followUpCount}</b><span>remaining attention items</span></div><div><b>{money(stats.atRiskValue)}</b><span>value still being watched</span></div></div>{!done&&<button onClick={()=>setStage('action')}>Return to action view</button>}</section>}
 
-    <section className={styles.visualGrid}>
-      <article className={styles.panel}><header><div><span>Data distribution</span><h2>Where records are currently sitting</h2></div><BarChart3 size={18}/></header><div className={styles.chartMedium}><ResponsiveContainer width="100%" height="100%"><BarChart data={visuals.stageData} layout="vertical" margin={{left:4,right:8}}><XAxis type="number" hide/><YAxis dataKey="name" type="category" width={92} tick={{fill:'#8da0b8',fontSize:10}} axisLine={false} tickLine={false}/><Tooltip cursor={{fill:'rgba(79,140,255,.05)'}} contentStyle={{background:'#091421',border:'1px solid rgba(137,167,207,.18)',borderRadius:10,fontSize:11}}/><Bar dataKey="count" radius={[0,7,7,0]}>{visuals.stageData.map((_,index)=><Cell key={index} fill={PALETTE[index%PALETTE.length]}/>)}</Bar></BarChart></ResponsiveContainer></div></article>
-      <article className={styles.panel}><header><div><span>Attention heatmap</span><h2>How long records remain untouched</h2></div><Eye size={18}/></header><div className={styles.heatmap}>{visuals.heat.map((item,index)=>{const intensity=item.value/visuals.maxHeat;return <div key={item.label}><span>{item.label}</span><i style={{opacity:.18+intensity*.82,transform:`scaleY(${.45+intensity*.55})`}}/><b>{item.value}</b><small>{index<2?'Recent':'Review'}</small></div>})}</div><p className={styles.microcopy}>Darker columns indicate a larger concentration of records that have not moved recently.</p></article>
-      <article className={`${styles.panel} ${styles.sourcePanel}`}><header><div><span>Source mix</span><h2>Where these records originated</h2></div><Sparkles size={18}/></header><div className={styles.sourceSplit}><div className={styles.donut}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={visuals.sourceData} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={3} isAnimationActive={false}>{visuals.sourceData.map((_,index)=><Cell key={index} fill={PALETTE[index%PALETTE.length]}/>)}</Pie></PieChart></ResponsiveContainer><div className={styles.donutTotal}><b>{stats.total}</b><span>records</span></div></div><div className={styles.legend}>{visuals.sourceData.map((item,index)=><div key={item.name}><i style={{background:PALETTE[index%PALETTE.length]}}/><span>{item.name}</span><b>{item.value}</b></div>)}</div></div></article>
+    <section className={styles.pilotGate}>
+      <div><span>14-day working pilot · ₹9,999</span><h2>The demo shows the experience. The pilot proves whether it changes real business behaviour.</h2><p>We configure one recurring flow, deliver daily attention briefs, track actions and measure saves, faster movement, clearer ownership and reduced owner chasing.</p></div>
+      <div className={styles.gateActions}><button onClick={()=>setEmail(true)}><Mail size={15}/> Email brief</button><button className={styles.pilotButton} onClick={()=>setPilot(true)}>Explore the pilot <ArrowRight size={15}/></button></div>
     </section>
-
-    <section className={styles.previewGate}>
-      <div className={styles.lock}><LockKeyhole size={20}/></div><div><span>Visual preview complete</span><h2>The demo helps you see the signals. The paid pilot helps you act on them.</h2><p>Detailed diagnosis, record-level recommendations, action ownership, sharing and outcome tracking are reserved for the guided 14-day pilot. You can begin alone; involve other people only when the decision requires it.</p></div><div className={styles.gateActions}><button className={styles.secondary} onClick={()=>setEmail(true)}><Mail size={15}/> Email visual brief</button><button className={styles.primary} onClick={()=>setPilot(true)}>Explore ₹9,999 pilot <ArrowRight size={15}/></button>{dataMode==='demo'&&<button className={styles.upload} onClick={()=>setShowUpload(true)}><Upload size={15}/> Use my CSV</button>}</div>
-    </section>
-    <p className={styles.privacy}>Uploaded CSV data stays in this browser session. Emails contain only aggregated visual insights.</p>
+    <p className={styles.privacy}>CSV data remains in this browser session. Google Sheets and existing export workflows remain supported for guided pilots.</p>
     {email&&<EmailDecisionBriefModal onClose={()=>setEmail(false)}/>} {pilot&&<PilotDetailsModal onClose={()=>setPilot(false)}/>} 
-  </div>
+  </div>;
 }
