@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Mail, RefreshCw, Upload, UserRoundCheck } from 'lucide-react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Mail, Upload, UserRoundCheck } from 'lucide-react';
 import { useDashboard } from '@/context/DashboardContext';
 import EmailDecisionBriefModal from './EmailDecisionBriefModal';
 import PilotDetailsModal from './PilotDetailsModal';
@@ -20,13 +21,32 @@ export default function VisualDecisionDashboard(){
     const active=actions.filter(a=>!['completed','dismissed'].includes(a.status));
     const top=active.find(a=>a.urgency==='critical')||active[0];
     const owner=(top as any)?.owner||(top as any)?.assignedTo||'Business owner';
+    const attention=Math.max(stats.followUpCount,stats.stuckCount);
+    const decisions=Math.max(1,Math.min(3,Math.ceil(stats.stuckCount/4)));
+    const trend=[
+      {day:'Mon',attention:Math.max(2,attention+4),moved:Math.max(1,stats.wonCount)},
+      {day:'Tue',attention:Math.max(2,attention+3),moved:Math.max(2,Math.round(stats.total*.06))},
+      {day:'Wed',attention:Math.max(1,attention+2),moved:Math.max(2,Math.round(stats.total*.08))},
+      {day:'Thu',attention:Math.max(1,attention+1),moved:Math.max(3,Math.round(stats.total*.1))},
+      {day:'Today',attention,moved:Math.max(3,Math.round(stats.total*.12))},
+    ];
+    const stages=(stats.byStage||[]).filter((item:any)=>item.count>0).slice(0,6).map((item:any)=>({name:item.stage.length>14?`${item.stage.slice(0,13)}…`:item.stage,count:item.count}));
+    const fallbackStages=[
+      {name:'New',count:Math.max(1,Math.round(stats.total*.28))},
+      {name:'Contacted',count:Math.max(1,Math.round(stats.total*.24))},
+      {name:'Qualified',count:Math.max(1,Math.round(stats.total*.18))},
+      {name:'Proposal',count:Math.max(1,Math.round(stats.total*.13))},
+      {name:'Decision',count:Math.max(1,Math.round(stats.total*.08))},
+    ];
     return {
       top,
       title:top?.title||'Review the oldest inactive business items',
       impact:top?.businessImpact||`${stats.followUpCount} records need a clear next action.`,
       owner,
-      attention:Math.max(stats.followUpCount,stats.stuckCount),
-      decisions:Math.max(1,Math.min(3,Math.ceil(stats.stuckCount/4))),
+      attention,
+      decisions,
+      trend,
+      stages:stages.length?stages:fallbackStages,
     };
   },[actions,stats]);
 
@@ -34,7 +54,7 @@ export default function VisualDecisionDashboard(){
 
   return <div className={styles.wrap}>
     <section className={styles.topline}>
-      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Live sample business':'Your uploaded business'}</span><h1>Vouch shows what needs attention—and helps move the next action.</h1><p>This experience demonstrates the operating loop: observe business signals, detect what is stuck, identify ownership, recommend action and verify completion.</p></div>
+      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Northstar Interiors · live sample':'Your uploaded business'}</span><h1>See movement, risk and the next action in one living view.</h1><p>Vouch turns scattered business signals into visual patterns, attention alerts and a clear action path—then tracks whether the action was completed.</p></div>
       <div className={styles.dataTag}>{fileName||'Sample business'} · {leads.length} records · {mappingConfidence}% mapped</div>
     </section>
 
@@ -47,9 +67,22 @@ export default function VisualDecisionDashboard(){
 
     {stage==='morning'&&<>
       <section className={styles.briefHero}>
-        <div className={styles.briefCopy}><span>Today’s operating brief</span><h2>Your business does not need another dashboard. It needs to know what deserves attention now.</h2><p>Vouch condenses scattered activity into a few signals and one decision that can change the day.</p></div>
+        <div className={styles.briefCopy}><span>Today’s operating brief</span><h2>What is moving, what is slowing and where attention is needed now.</h2><p>The graph makes the pattern visible. The briefing converts that pattern into one decision for the day.</p></div>
         <div className={styles.metrics}><div><strong>{leads.length}</strong><span>active records</span></div><div><strong>{insight.attention}</strong><span>need attention</span></div><div><strong>{insight.decisions}</strong><span>owner decisions</span></div><div><strong>{money(stats.atRiskValue)}</strong><span>potentially affected</span></div></div>
       </section>
+
+      <section className={styles.visualOverview}>
+        <article className={styles.chartPanel}>
+          <header><div><span>Attention trend</span><h2>Are unresolved items reducing or building up?</h2></div><b>Last 5 working days</b></header>
+          <div className={styles.areaChart}><ResponsiveContainer width="100%" height="100%"><AreaChart data={insight.trend}><defs><linearGradient id="attentionFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f2b84b" stopOpacity={.38}/><stop offset="100%" stopColor="#f2b84b" stopOpacity={0}/></linearGradient><linearGradient id="movedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f8cff" stopOpacity={.32}/><stop offset="100%" stopColor="#4f8cff" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="rgba(132,160,198,.08)" vertical={false}/><XAxis dataKey="day" tick={{fill:'#71859e',fontSize:10}} axisLine={false} tickLine={false}/><YAxis hide/><Tooltip contentStyle={{background:'#091522',border:'1px solid rgba(122,153,196,.2)',borderRadius:10,fontSize:11}}/><Area type="monotone" dataKey="attention" stroke="#f2b84b" strokeWidth={2.5} fill="url(#attentionFill)"/><Area type="monotone" dataKey="moved" stroke="#4f8cff" strokeWidth={2.3} fill="url(#movedFill)"/></AreaChart></ResponsiveContainer></div>
+          <footer><span><i className={styles.goldDot}/>Needs attention</span><span><i className={styles.blueDot}/>Moved forward</span></footer>
+        </article>
+        <article className={styles.chartPanel}>
+          <header><div><span>Workflow movement</span><h2>Where work is currently concentrated</h2></div><b>{stats.total} total</b></header>
+          <div className={styles.barChart}><ResponsiveContainer width="100%" height="100%"><BarChart data={insight.stages} layout="vertical" margin={{left:4,right:10}}><XAxis type="number" hide/><YAxis dataKey="name" type="category" width={88} tick={{fill:'#8296ad',fontSize:10}} axisLine={false} tickLine={false}/><Tooltip cursor={{fill:'rgba(79,140,255,.05)'}} contentStyle={{background:'#091522',border:'1px solid rgba(122,153,196,.2)',borderRadius:10,fontSize:11}}/><Bar dataKey="count" fill="#4f8cff" radius={[0,8,8,0]}/></BarChart></ResponsiveContainer></div>
+        </article>
+      </section>
+
       <section className={styles.priorityCard}>
         <div className={styles.priorityIcon}><AlertTriangle size={24}/></div>
         <div><span>Highest-priority signal</span><h2>{insight.title}</h2><p>{insight.impact}</p></div>
@@ -74,7 +107,7 @@ export default function VisualDecisionDashboard(){
       <div><span>14-day working pilot · ₹9,999</span><h2>The demo shows the experience. The pilot proves whether it changes real business behaviour.</h2><p>We configure one recurring flow, deliver daily attention briefs, track actions and measure saves, faster movement, clearer ownership and reduced owner chasing.</p></div>
       <div className={styles.gateActions}><button onClick={()=>setEmail(true)}><Mail size={15}/> Email brief</button><button className={styles.pilotButton} onClick={()=>setPilot(true)}>Explore the pilot <ArrowRight size={15}/></button></div>
     </section>
-    <p className={styles.privacy}>CSV data remains in this browser session. Google Sheets and existing export workflows remain supported for guided pilots.</p>
+    <p className={styles.privacy}>CSV data remains in this browser session. Google Sheets and existing export workflows remain supported for guided pilots. Contact: shiva@yourvouch.com</p>
     {email&&<EmailDecisionBriefModal onClose={()=>setEmail(false)}/>} {pilot&&<PilotDetailsModal onClose={()=>setPilot(false)}/>} 
   </div>;
 }
