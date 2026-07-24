@@ -26,6 +26,14 @@ export default function Navbar() {
                 {item}
               </a>
             ))}
+            <a
+              href="https://vouchstarterkit.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-white text-sm font-medium transition-colors"
+            >
+              Starter Kit
+            </a>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -64,6 +72,15 @@ export default function Navbar() {
                 {item}
               </a>
             ))}
+            <a
+              href="https://vouchstarterkit.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-white text-sm font-medium transition-colors py-2"
+              onClick={() => setMenuOpen(false)}
+            >
+              Starter Kit
+            </a>
             <a
               href="#lead-form"
               className="text-sm font-semibold text-white bg-accent hover:bg-accent-hover px-4 py-2 rounded-lg transition-colors text-center mt-2"

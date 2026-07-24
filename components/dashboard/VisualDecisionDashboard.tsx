@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Mail, Upload, UserRoun
 import { useDashboard } from '@/context/DashboardContext';
 import EmailDecisionBriefModal from './EmailDecisionBriefModal';
 import PilotDetailsModal from './PilotDetailsModal';
+import ProductFamilyCallout from './ProductFamilyCallout';
 import styles from './VisualDecisionDashboard.module.css';
 
 function money(value:number){if(value>=100)return `₹${(value/100).toFixed(1)}Cr`;if(value>=10)return `₹${Math.round(value)}L`;if(value>0)return `₹${value.toFixed(1)}L`;return '—'}
@@ -109,6 +110,7 @@ export default function VisualDecisionDashboard(){
       <div><span>14-day working pilot · ₹9,999</span><h2>Start with one enquiry flow. Prove whether Vouch saves time and prevents missed follow-ups.</h2><p>Built for small businesses, startups and growing teams using the spreadsheets and workflows they already have.</p></div>
       <div className={styles.gateActions}><button onClick={()=>setEmail(true)}><Mail size={15}/> Email brief</button><button className={styles.pilotButton} onClick={()=>setPilot(true)}>Explore the pilot <ArrowRight size={15}/></button></div>
     </section>
+    <ProductFamilyCallout />
     <p className={styles.privacy}>CSV data remains in this browser session. Google Sheets and existing export workflows remain supported. Contact: shiva@yourvouch.com</p>
     {email&&<EmailDecisionBriefModal onClose={()=>setEmail(false)}/>} {pilot&&<PilotDetailsModal onClose={()=>setPilot(false)}/>} 
   </div>;

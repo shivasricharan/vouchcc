@@ -19,10 +19,13 @@ export default function Footer() {
               { label: 'How it Works', href: '#how-it-works' },
               { label: 'Dashboard', href: '#dashboard' },
               { label: 'Apply', href: '#lead-form' },
+              { label: 'Starter Kit', href: 'https://vouchstarterkit.netlify.app/' },
+              { label: 'GitHub', href: 'https://github.com/yourvouch/vouch-starter-kit' },
             ].map((link) => (
               <a
                 key={link.label}
                 href={link.href}
+                {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
               >
                 {link.label}
