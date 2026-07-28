@@ -1,117 +1,224 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Mail, Upload, UserRoundCheck } from 'lucide-react';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  AlertTriangle,
+  ArrowRight,
+  CalendarClock,
+  Check,
+  CheckCircle2,
+  CircleHelp,
+  Clock3,
+  Mail,
+  RotateCcw,
+  Upload,
+  UserRoundCheck,
+} from 'lucide-react';
 import { useDashboard } from '@/context/DashboardContext';
 import EmailDecisionBriefModal from './EmailDecisionBriefModal';
-import PilotDetailsModal from './PilotDetailsModal';
-import ProductFamilyCallout from './ProductFamilyCallout';
 import styles from './VisualDecisionDashboard.module.css';
 
-function money(value:number){if(value>=100)return `₹${(value/100).toFixed(1)}Cr`;if(value>=10)return `₹${Math.round(value)}L`;if(value>0)return `₹${value.toFixed(1)}L`;return '—'}
-function relatableDemoValue(value:number){if(value<=0)return '—';const scaled=Math.min(9.8,Math.max(.8,value/34));return `₹${scaled.toFixed(1)}L`}
+const DAY = 86_400_000;
+
+type Outcome = 'Follow-up' | 'Meeting / visit' | 'Quotation' | 'Payment' | 'Completion';
+type RecordState = 'open' | 'assigned' | 'contacted' | 'snoozed' | 'closed';
+
+function money(value:number){
+  if(!value) return 'Not provided';
+  if(value>=10_000_000) return `₹${(value/10_000_000).toFixed(1)} Cr`;
+  if(value>=100_000) return `₹${(value/100_000).toFixed(1)} L`;
+  return `₹${Math.round(value).toLocaleString('en-IN')}`;
+}
+
+function parseDate(value:string){
+  const parsed=Date.parse(value);
+  return Number.isNaN(parsed)?null:parsed;
+}
 
 export default function VisualDecisionDashboard(){
-  const {leads,stats,dataMode,fileName,mappingConfidence,setShowUpload,actions}=useDashboard();
+  const {
+    leads,stats,dataMode,fileName,mappingConfidence,setShowUpload,mappingMeta,
+  }=useDashboard();
+  const [outcome,setOutcome]=useState<Outcome>('Follow-up');
+  const [inactiveDays,setInactiveDays]=useState(5);
   const [email,setEmail]=useState(false);
-  const [pilot,setPilot]=useState(false);
-  const [done,setDone]=useState(false);
-  const [stage,setStage]=useState<'morning'|'action'|'closure'>('morning');
-  const displayValue=dataMode==='demo'?relatableDemoValue(stats.atRiskValue):money(stats.atRiskValue);
+  const [recordStates,setRecordStates]=useState<Record<string,RecordState>>({});
+  const [showEvidence,setShowEvidence]=useState(false);
 
-  const insight=useMemo(()=>{
-    const active=actions.filter(a=>!['completed','dismissed'].includes(a.status));
-    const top=active.find(a=>a.urgency==='critical')||active[0];
-    const owner=(top as any)?.owner||(top as any)?.assignedTo||'Business owner';
-    const attention=Math.max(stats.followUpCount,stats.stuckCount);
-    const decisions=Math.max(1,Math.min(3,Math.ceil(stats.stuckCount/4)));
-    const trend=[
-      {day:'Mon',attention:Math.max(2,attention+4),moved:Math.max(1,stats.wonCount)},
-      {day:'Tue',attention:Math.max(2,attention+3),moved:Math.max(2,Math.round(stats.total*.06))},
-      {day:'Wed',attention:Math.max(1,attention+2),moved:Math.max(2,Math.round(stats.total*.08))},
-      {day:'Thu',attention:Math.max(1,attention+1),moved:Math.max(3,Math.round(stats.total*.1))},
-      {day:'Today',attention,moved:Math.max(3,Math.round(stats.total*.12))},
-    ];
-    const stages=(stats.byStage||[]).filter((item:any)=>item.count>0).slice(0,6).map((item:any)=>({name:item.stage.length>14?`${item.stage.slice(0,13)}…`:item.stage,count:item.count}));
-    const fallbackStages=[
-      {name:'New',count:Math.max(1,Math.round(stats.total*.28))},
-      {name:'Contacted',count:Math.max(1,Math.round(stats.total*.24))},
-      {name:'Qualified',count:Math.max(1,Math.round(stats.total*.18))},
-      {name:'Proposal',count:Math.max(1,Math.round(stats.total*.13))},
-      {name:'Decision',count:Math.max(1,Math.round(stats.total*.08))},
-    ];
+  const analysis=useMemo(()=>{
+    const active=leads.filter(lead=>!/(lost|closed lost|completed|won)/i.test(`${lead.stage} ${lead.status}`));
+    const missingOwner=active.filter(lead=>!lead.owner||/unassigned|unknown|n\/a/i.test(lead.owner));
+    const missingNext=active.filter(lead=>!lead.nextAction||/none|n\/a|unknown/i.test(lead.nextAction));
+    const invalidDates=active.filter(lead=>!parseDate(lead.lastContacted));
+    const overdue=active.filter(lead=>lead.daysSinceUpdate>=inactiveDays);
+    const analysable=active.filter(lead=>Boolean(lead.client&&lead.stage));
+
+    const ranked=active.map(lead=>{
+      const noOwner=!lead.owner||/unassigned|unknown|n\/a/i.test(lead.owner);
+      const noNext=!lead.nextAction||/none|n\/a|unknown/i.test(lead.nextAction);
+      const overdueBy=Math.max(0,lead.daysSinceUpdate-inactiveDays);
+      const late=lead.daysSinceUpdate>=inactiveDays;
+      const quote=/quote|proposal|negotiation/i.test(lead.stage);
+      const score=(late?40+Math.min(overdueBy*3,24):0)+(noNext?28:0)+(noOwner?22:0)+(quote?12:0)+(lead.value?Math.min(lead.value/100_000,10):0);
+      const reasons=[
+        late?`No update for ${lead.daysSinceUpdate} days`:null,
+        noNext?'No clear next action':null,
+        noOwner?'Owner is unclear':null,
+        quote?'Customer is at a decision stage':null,
+      ].filter(Boolean) as string[];
+      let recommendation=`Confirm the next ${outcome.toLowerCase()} and record a due date.`;
+      if(noOwner) recommendation='Assign one owner before any further follow-up.';
+      else if(noNext) recommendation=`Contact the customer and agree the next ${outcome.toLowerCase()}.`;
+      else if(quote) recommendation='Ask for the decision timeline and record the customer concern.';
+      return {...lead,score,reasons,recommendation};
+    }).sort((a,b)=>b.score-a.score);
+
     return {
-      top,
-      title:dataMode==='demo'?'Follow up with 5 enquiries that have gone quiet':top?.title||'Review the oldest inactive enquiries',
-      impact:dataMode==='demo'?'The oldest enquiry has had no update for 8 days. One simple follow-up could move it forward.':top?.businessImpact||`${stats.followUpCount} enquiries need a clear next action.`,
-      owner,
-      attention,
-      decisions,
-      trend,
-      stages:stages.length?stages:fallbackStages,
+      active,
+      analysable,
+      missingOwner,
+      missingNext,
+      invalidDates,
+      overdue,
+      priorities:ranked.slice(0,3),
     };
-  },[actions,stats,dataMode]);
+  },[leads,inactiveDays,outcome]);
 
-  function takeAction(){setDone(true);setStage('closure')}
+  const actionSummary=useMemo(()=>{
+    const contacted=Object.values(recordStates).filter(value=>value==='contacted').length;
+    const assigned=Object.values(recordStates).filter(value=>value==='assigned').length;
+    const snoozed=Object.values(recordStates).filter(value=>value==='snoozed').length;
+    const closed=Object.values(recordStates).filter(value=>value==='closed').length;
+    return {contacted,assigned,snoozed,closed,total:contacted+assigned+snoozed+closed};
+  },[recordStates]);
+
+  const stageData=(stats.byStage||[]).filter(item=>item.count>0).slice(0,7).map(item=>({
+    name:item.stage.length>15?`${item.stage.slice(0,14)}…`:item.stage,
+    count:item.count,
+  }));
+
+  function updateRecord(id:string,state:RecordState){
+    setRecordStates(current=>({...current,[id]:state}));
+  }
 
   return <div className={styles.wrap}>
     <section className={styles.topline}>
-      <div><span className={styles.eyebrow}>{dataMode==='demo'?'Aarambh Services · small business sample':'Your uploaded business'}</span><h1>A simple daily view for a growing business.</h1><p>See which enquiries are moving, which need follow-up and what action matters today.</p></div>
-      <div className={styles.dataTag}>{dataMode==='demo'?'Sample business':fileName||'Uploaded data'} · {leads.length} enquiries · {mappingConfidence}% mapped</div>
+      <div>
+        <span className={styles.eyebrow}>Vouch Data Lab · experimental</span>
+        <h1>Decide what needs attention first.</h1>
+        <p>Vouch checks whether the data is usable, surfaces the customer records that need action and turns them into a clear operating agenda.</p>
+      </div>
+      <div className={styles.dataTag}>{dataMode==='demo'?'Sample business':fileName||'Uploaded data'} · {leads.length} records</div>
     </section>
 
-    <section className={styles.modeBar}>
-      <div className={styles.modeTabs}>{[
-        ['morning','Morning brief'],['action','Action view'],['closure','Evening closure']
-      ].map(([key,label])=><button key={key} className={stage===key?styles.active:''} onClick={()=>setStage(key as any)}>{label}</button>)}</div>
-      {dataMode==='demo'&&<button className={styles.uploadButton} onClick={()=>setShowUpload(true)}><Upload size={15}/> Use my CSV</button>}
+    <section className={styles.contextBar}>
+      <label>
+        <span>A successful next outcome means</span>
+        <select value={outcome} onChange={event=>setOutcome(event.target.value as Outcome)}>
+          <option>Follow-up</option><option>Meeting / visit</option><option>Quotation</option><option>Payment</option><option>Completion</option>
+        </select>
+      </label>
+      <label>
+        <span>Needs attention after</span>
+        <select value={inactiveDays} onChange={event=>setInactiveDays(Number(event.target.value))}>
+          <option value={2}>2 inactive days</option><option value={3}>3 inactive days</option><option value={5}>5 inactive days</option><option value={7}>7 inactive days</option><option value={14}>14 inactive days</option>
+        </select>
+      </label>
+      <button onClick={()=>setShowUpload(true)}><Upload size={15}/>{dataMode==='demo'?'Use my data':'Upload new file'}</button>
     </section>
 
-    {stage==='morning'&&<>
-      <section className={styles.briefHero}>
-        <div className={styles.briefCopy}><span>Today’s brief</span><h2>What is moving, what needs follow-up and where the owner should step in.</h2><p>One quick view instead of checking multiple sheets, messages and people.</p></div>
-        <div className={styles.metrics}><div><strong>{leads.length}</strong><span>enquiries tracked</span></div><div><strong>{insight.attention}</strong><span>need follow-up</span></div><div><strong>{insight.decisions}</strong><span>need owner attention</span></div><div><strong>{displayValue}</strong><span>value needing follow-up</span></div></div>
-      </section>
+    <section className={styles.trustPanel}>
+      <div className={styles.trustIntro}>
+        <span>Before the findings</span>
+        <h2>How much can Vouch confidently use?</h2>
+        <p>Indicative findings become more useful when the customer, stage, owner, last interaction and next action are consistently recorded.</p>
+      </div>
+      <div className={styles.trustMetrics}>
+        <div><strong>{analysis.analysable.length}</strong><span>active records analysable</span></div>
+        <div><strong>{analysis.missingNext.length}</strong><span>missing next action</span></div>
+        <div><strong>{analysis.missingOwner.length}</strong><span>owner unclear</span></div>
+        <div><strong>{analysis.invalidDates.length}</strong><span>dates need review</span></div>
+      </div>
+      <div className={styles.confidence}>
+        <div><span>Field mapping confidence</span><b>{mappingConfidence}%</b></div>
+        <div className={styles.confidenceTrack}><i style={{width:`${mappingConfidence}%`}}/></div>
+        <small>{mappingMeta?.mapped||0} fields mapped. Results are directional and should be checked against business context.</small>
+      </div>
+    </section>
 
-      <section className={styles.visualOverview}>
-        <article className={styles.chartPanel}>
-          <header><div><span>Follow-up trend</span><h2>Are pending enquiries reducing?</h2></div><b>Last 5 working days</b></header>
-          <div className={styles.areaChart}><ResponsiveContainer width="100%" height="100%"><AreaChart data={insight.trend}><defs><linearGradient id="attentionFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f2b84b" stopOpacity={.38}/><stop offset="100%" stopColor="#f2b84b" stopOpacity={0}/></linearGradient><linearGradient id="movedFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f8cff" stopOpacity={.32}/><stop offset="100%" stopColor="#4f8cff" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="rgba(132,160,198,.08)" vertical={false}/><XAxis dataKey="day" tick={{fill:'#71859e',fontSize:10}} axisLine={false} tickLine={false}/><YAxis hide/><Tooltip contentStyle={{background:'#091522',border:'1px solid rgba(122,153,196,.2)',borderRadius:10,fontSize:11}}/><Area type="monotone" dataKey="attention" stroke="#f2b84b" strokeWidth={2.5} fill="url(#attentionFill)"/><Area type="monotone" dataKey="moved" stroke="#4f8cff" strokeWidth={2.3} fill="url(#movedFill)"/></AreaChart></ResponsiveContainer></div>
-          <footer><span><i className={styles.goldDot}/>Needs follow-up</span><span><i className={styles.blueDot}/>Moved forward</span></footer>
-        </article>
-        <article className={styles.chartPanel}>
-          <header><div><span>Enquiry movement</span><h2>Where enquiries are currently sitting</h2></div><b>{stats.total} total</b></header>
-          <div className={styles.barChart}><ResponsiveContainer width="100%" height="100%"><BarChart data={insight.stages} layout="vertical" margin={{left:4,right:10}}><XAxis type="number" hide/><YAxis dataKey="name" type="category" width={88} tick={{fill:'#8296ad',fontSize:10}} axisLine={false} tickLine={false}/><Tooltip cursor={{fill:'rgba(79,140,255,.05)'}} contentStyle={{background:'#091522',border:'1px solid rgba(122,153,196,.2)',borderRadius:10,fontSize:11}}/><Bar dataKey="count" fill="#4f8cff" radius={[0,8,8,0]}/></BarChart></ResponsiveContainer></div>
-        </article>
-      </section>
+    <section className={styles.decisionHead}>
+      <div>
+        <span>What deserves attention first</span>
+        <h2>{analysis.overdue.length} records crossed your {inactiveDays}-day attention limit.</h2>
+        <p>Start with these three—not with every row in the spreadsheet.</p>
+      </div>
+      <div className={styles.decisionCount}><strong>{analysis.priorities.length}</strong><span>priority decisions</span></div>
+    </section>
 
-      <section className={styles.priorityCard}>
-        <div className={styles.priorityIcon}><AlertTriangle size={24}/></div>
-        <div><span>Today’s priority</span><h2>{insight.title}</h2><p>{insight.impact}</p></div>
-        <button onClick={()=>setStage('action')}>Review action <ArrowRight size={16}/></button>
-      </section>
-      <section className={styles.signalFlow}>{[
-        ['See',`${leads.length} enquiries brought into one view`],
-        ['Spot',`${insight.attention} need follow-up or a next step`],
-        ['Act',`${insight.decisions} need the owner’s attention today`],
-      ].map(([title,text],index)=><div key={title}><i>0{index+1}</i><b>{title}</b><span>{text}</span></div>)}</section>
-    </>}
+    <section className={styles.priorityList}>
+      {analysis.priorities.map((lead,index)=>{
+        const state=recordStates[lead.id]||'open';
+        return <article className={styles.recordCard} key={lead.id}>
+          <div className={styles.recordRank}>0{index+1}</div>
+          <div className={styles.recordMain}>
+            <div className={styles.recordTitle}>
+              <div><span>{lead.stage||'Stage not recorded'}</span><h3>{lead.client||'Unnamed customer'}</h3></div>
+              <b>{money(lead.value)}</b>
+            </div>
+            <div className={styles.reasonRow}>{lead.reasons.length?lead.reasons.map(reason=><span key={reason}><AlertTriangle size={13}/>{reason}</span>):<span><CircleHelp size={13}/>Record needs a clearer next step</span>}</div>
+            <div className={styles.recommendation}>
+              <ArrowRight size={17}/><div><span>Recommended decision</span><b>{lead.recommendation}</b></div>
+            </div>
+            <div className={styles.recordMeta}>
+              <span><UserRoundCheck size={14}/>{lead.owner||'Unassigned'}</span>
+              <span><Clock3 size={14}/>{lead.daysSinceUpdate} days since update</span>
+              <span><CalendarClock size={14}/>{lead.nextAction||'No next action recorded'}</span>
+            </div>
+          </div>
+          <div className={styles.recordActions}>
+            {state==='open'?<>
+              <button className={styles.primaryAction} onClick={()=>updateRecord(lead.id,'contacted')}>Mark contacted</button>
+              <button onClick={()=>updateRecord(lead.id,'assigned')}>Assign owner</button>
+              <button onClick={()=>updateRecord(lead.id,'snoozed')}>Snooze with reason</button>
+              <button onClick={()=>updateRecord(lead.id,'closed')}>Close record</button>
+            </>:<div className={styles.recorded}><CheckCircle2 size={20}/><span>Decision recorded</span><b>{state}</b><button onClick={()=>updateRecord(lead.id,'open')}><RotateCcw size={13}/> Undo</button></div>}
+          </div>
+        </article>;
+      })}
+    </section>
 
-    {stage==='action'&&<section className={styles.actionWorkspace}>
-      <div className={styles.actionMain}><span>Recommended action</span><h2>{insight.title}</h2><p>{insight.impact}</p><div className={styles.actionMeta}><div><UserRoundCheck size={16}/><span>Current owner</span><b>{insight.owner}</b></div><div><Clock3 size={16}/><span>Action due</span><b>Today</b></div></div><div className={styles.actionButtons}><button className={styles.primary} onClick={takeAction}>{done?'Action recorded':'Assign and track'} <ArrowRight size={15}/></button><button className={styles.secondary} onClick={()=>setPilot(true)}>See guided pilot</button></div></div>
-      <div className={styles.timeline}><h3>Why Vouch flagged this</h3><div><i/><span>The enquiry entered the workflow</span></div><div><i/><span>The promised next step was not updated</span></div><div className={styles.risk}><i/><span>The delay crossed the follow-up limit</span></div><div><i/><span>Vouch recommends the next responsible action</span></div></div>
+    <section className={styles.agenda}>
+      <div>
+        <span>Today’s operating agenda</span>
+        <h2>Turn the findings into a small number of decisions.</h2>
+      </div>
+      <div className={styles.agendaItems}>
+        <div><b>{analysis.overdue.length}</b><span>Contact overdue customers</span></div>
+        <div><b>{analysis.missingOwner.length}</b><span>Assign clear owners</span></div>
+        <div><b>{analysis.missingNext.length}</b><span>Agree and record next actions</span></div>
+        <div><b>{actionSummary.total}</b><span>Decisions recorded now</span></div>
+      </div>
+    </section>
+
+    <section className={styles.experiment}>
+      <div className={styles.experimentIcon}><Check size={23}/></div>
+      <div><span>Seven-day experiment</span><h2>Every active customer leaves a conversation with an owner, next action and due date.</h2><p>At the end of seven days, compare how many overdue records remain and how many customers moved to the next outcome: <b>{outcome}</b>.</p></div>
+      <button onClick={()=>setEmail(true)}><Mail size={15}/> Email this decision brief</button>
+    </section>
+
+    <button className={styles.evidenceToggle} onClick={()=>setShowEvidence(value=>!value)}>{showEvidence?'Hide supporting evidence':'Show supporting evidence and dashboard'} <ArrowRight size={15}/></button>
+
+    {showEvidence&&<section className={styles.evidence}>
+      <div className={styles.evidenceCopy}><span>Patterns behind the decisions</span><h2>Use the dashboard to understand the pattern—not to decide where to begin.</h2><p>The priority list above remains the operating surface. These views show where records are accumulating and how much work remains.</p></div>
+      <div className={styles.evidenceMetrics}><div><strong>{stats.total}</strong><span>total records</span></div><div><strong>{stats.followUpCount}</strong><span>need follow-up</span></div><div><strong>{stats.stuckCount}</strong><span>stuck records</span></div><div><strong>{money(stats.atRiskValue)}</strong><span>recorded value needing review</span></div></div>
+      <div className={styles.chartPanel}>
+        <header><div><span>Journey distribution</span><h3>Where records are currently sitting</h3></div><b>{stats.total} records</b></header>
+        <div className={styles.barChart}><ResponsiveContainer width="100%" height="100%"><BarChart data={stageData} layout="vertical" margin={{left:4,right:16}}><XAxis type="number" hide/><YAxis dataKey="name" type="category" width={105} tick={{fill:'#8296ad',fontSize:10}} axisLine={false} tickLine={false}/><Tooltip cursor={{fill:'rgba(79,140,255,.05)'}} contentStyle={{background:'#091522',border:'1px solid rgba(122,153,196,.2)',borderRadius:10,fontSize:11}}/><Bar dataKey="count" fill="#4f8cff" radius={[0,8,8,0]}/></BarChart></ResponsiveContainer></div>
+      </div>
     </section>}
 
-    {stage==='closure'&&<section className={styles.closure}>
-      <CheckCircle2 size={34}/><span>Evening closure</span><h2>{done?'The follow-up was recorded and moved forward.':'No completion has been recorded yet.'}</h2><p>{done?'Vouch now watches for the outcome and brings any unfinished item into the next brief.':'Take the recommended action to experience the full see → act → verify loop.'}</p><div className={styles.closureGrid}><div><b>{done?'1':'0'}</b><span>actions completed</span></div><div><b>{stats.followUpCount}</b><span>follow-ups remaining</span></div><div><b>{displayValue}</b><span>value still being watched</span></div></div>{!done&&<button onClick={()=>setStage('action')}>Return to action view</button>}</section>}
-
-    <section className={styles.pilotGate}>
-      <div><span>14-day working pilot · ₹9,999</span><h2>Start with one enquiry flow. Prove whether Vouch saves time and prevents missed follow-ups.</h2><p>Built for small businesses, startups and growing teams using the spreadsheets and workflows they already have.</p></div>
-      <div className={styles.gateActions}><button onClick={()=>setEmail(true)}><Mail size={15}/> Email brief</button><button className={styles.pilotButton} onClick={()=>setPilot(true)}>Explore the pilot <ArrowRight size={15}/></button></div>
-    </section>
-    <ProductFamilyCallout />
-    <p className={styles.privacy}>CSV data remains in this browser session. Google Sheets and existing export workflows remain supported. Contact: shiva@yourvouch.com</p>
-    {email&&<EmailDecisionBriefModal onClose={()=>setEmail(false)}/>} {pilot&&<PilotDetailsModal onClose={()=>setPilot(false)}/>} 
+    <p className={styles.privacy}>Files remain in this browser session. Vouch findings are indicative and should be reviewed with the people who own the customer journey. Contact: shiva@yourvouch.com</p>
+    {email&&<EmailDecisionBriefModal onClose={()=>setEmail(false)}/>} 
   </div>;
 }
