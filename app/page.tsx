@@ -1,5 +1,5 @@
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import JourneyTrace from '@/components/JourneyTrace';
 
-export default function Dashboard() {
-  return <DashboardLayout />;
+export default function Home() {
+  return <JourneyTrace />;
 }
