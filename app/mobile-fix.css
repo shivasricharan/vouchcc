@@ -1,0 +1,74 @@
+/* iPhone / mobile Safari viewport and scrolling safeguards */
+html,
+body {
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-y: auto;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100svh;
+  overflow-y: auto !important;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.demo-shell {
+  height: auto !important;
+  min-height: 100svh;
+  overflow: visible !important;
+}
+
+.demo-header {
+  position: sticky;
+  top: 0;
+  min-height: 72px;
+  height: auto;
+  padding-top: env(safe-area-inset-top);
+}
+
+.demo-main {
+  height: auto !important;
+  min-height: calc(100svh - 72px);
+  overflow: visible !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+@supports (height: 100dvh) {
+  .demo-shell {
+    min-height: 100dvh;
+  }
+
+  .demo-main {
+    min-height: calc(100dvh - 72px);
+  }
+}
+
+@media (max-width: 760px) {
+  .demo-header {
+    min-height: 64px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  .demo-main {
+    min-height: calc(100svh - 64px);
+  }
+
+  .decision-review-shell,
+  .wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  select,
+  input,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+}
