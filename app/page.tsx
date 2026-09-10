@@ -1,5 +1,2 @@
-import JourneyTrace from '@/components/JourneyTrace';
-
-export default function Home() {
-  return <JourneyTrace />;
-}
+import QuickDemo from '@/components/QuickDemo';
+export default function Home(){return <QuickDemo kind="problem" />;}
